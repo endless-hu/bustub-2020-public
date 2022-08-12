@@ -1,5 +1,7 @@
 # FOREWORD
 
+[![Test](https://github.com/endless-hu/bustub-2020-public/actions/workflows/Test.yml/badge.svg)](https://github.com/endless-hu/bustub-2020-public/actions/workflows/Test.yml)
+
 This is **my project report** for [CMU's 15-445 Introduction to Database Systems, Fall 2020](https://15445.courses.cs.cmu.edu/fall2020/). 
 
 The original `README.md` file can be found [here](https://github.com/cmu-db/bustub).

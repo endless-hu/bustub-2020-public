@@ -1,4 +1,4 @@
-name: Test
+name: Lab Test
 # Will be triggered when I push to my private repo
 on: 
   workflow_dispatch:
@@ -16,17 +16,39 @@ jobs:
         with:
           repository: endless-hu/CMU-bustub
           token: ${{ secrets.GH_PAT }}
+          path: priv_repo
+
+      - name: Checkout This Repo
+        uses: actions/checkout@v3
+        with:
+          path: this_repo
 
       - name: Setup Build Environment
-        run: sudo bash build_support/packages.sh -y
+        run: sudo bash priv_repo/build_support/packages.sh -y
 
       - name: Build the Project
         run: |
+          cd priv_repo
           mkdir build
           cd build
           cmake ..
           make -j 2
           make build-tests
 
-      - name: "Run All Tests"
-        run: make check-tests
+      - name: Run All Unit Tests
+        run: |
+          cd priv_repo/build
+          make check-tests
+          cd ..
+          # copy test source code to this repo
+          rm -rf ../this_repo/test
+          cp -r test ../this_repo/test/
+
+      - name: Update /test
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: Zhijing Hu
+          author_email: qq906555703@gmail.com
+          cwd: ./this_repo/
+          message: "Update /test"
+          

@@ -13,6 +13,7 @@
 #include "storage/index/b_plus_tree.h"
 
 namespace bustub {
+std::mutex mtx;
 // helper function to launch multiple threads
 template <typename... Args>
 void LaunchParallelTest(uint64_t num_threads, Args &&...args) {
@@ -55,6 +56,10 @@ void InsertHelperSplit(BPlusTree<GenericKey<8>, RID, GenericComparator<8>> *tree
   for (auto key : keys) {
     if (static_cast<uint64_t>(key) % total_threads == thread_itr) {
       int64_t value = key & 0xFFFFFFFF;
+      // {
+      //   std::lock_guard<std::mutex> lock(mtx);
+      //   std::cout << "Inserting key " << key << " by thread " << std::this_thread::get_id() << std::endl;
+      // }
       rid.Set(static_cast<int32_t>(key >> 32), value);
       index_key.SetFromInteger(key);
       tree->Insert(index_key, rid, transaction);
@@ -102,89 +107,15 @@ void QueryHelperSplit(BPlusTree<GenericKey<8>, RID, GenericComparator<8>> *tree,
       rids.clear();
       index_key.SetFromInteger(key);
       tree->GetValue(index_key, &rids);
-      EXPECT_EQ(rids.size(), 1);
+      ASSERT_EQ(rids.size(), 1);
 
       int64_t value = key & 0xFFFFFFFF;
-      EXPECT_EQ(rids[0].GetSlotNum(), value);
+      ASSERT_EQ(rids[0].GetSlotNum(), value);
     }
   }
 }
 
-TEST(BPlusTreeConcurrentTest, DISABLED_FindLeafPageTest_Insert) {
-  // create KeyComparator and index schema
-  Schema *key_schema = ParseCreateStatement("a bigint");
-  GenericComparator<8> comparator(key_schema);
-
-  DiskManager *disk_manager = new DiskManager("test.db");
-  BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
-  // create b+ tree
-  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator, 4, 4);
-  // create and fetch header_page
-  page_id_t page_id;
-  auto header_page = bpm->NewPage(&page_id);
-  (void)header_page;
-
-  Transaction *txn = new Transaction(0);
-  std::vector<int64_t> keys{1, 2};
-  for (auto key : keys) {
-    GenericKey<8> index_key;
-    RID rid;
-    int64_t value = key & 0xFFFFFFFF;
-    rid.Set(static_cast<int32_t>(key >> 32), value);
-    index_key.SetFromInteger(key);
-    tree.Insert(index_key, rid, txn);
-  }
-  delete txn;
-
-  // create transaction
-  std::thread t1([&] {
-    std::vector<int64_t> keys{1, 2};
-    GenericKey<8> index_key;
-    RID rid;
-    Transaction *transaction = new Transaction(1);
-    int64_t value = keys[0] & 0xFFFFFFFF;
-    rid.Set(static_cast<int32_t>(keys[0] >> 32), value);
-    index_key.SetFromInteger(keys[0]);
-    Page *pg = tree.FindLeafPage(index_key, AccessMode::INSERT, false, transaction);
-    // Block t2 for 20 ms
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    pg->WUnlatch();
-    bpm->UnpinPage(pg->GetPageId(), true);
-    EXPECT_EQ(1, pg->GetPinCount());
-    delete transaction;
-  });
-
-  std::thread t2([&] {
-    std::vector<int64_t> keys{1, 2};
-    GenericKey<8> index_key;
-    RID rid;
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    Transaction *transaction = new Transaction(2);
-    int64_t value = keys[1] & 0xFFFFFFFF;
-    rid.Set(static_cast<int32_t>(keys[1] >> 32), value);
-    index_key.SetFromInteger(keys[1]);
-    const std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::steady_clock::now();
-    Page *pg = tree.FindLeafPage(index_key, AccessMode::INSERT, false, transaction);
-    const auto end = std::chrono::steady_clock::now();
-    EXPECT_GE(std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(), 17);
-    pg->WUnlatch();
-    bpm->UnpinPage(pg->GetPageId(), true);
-    EXPECT_EQ(0, pg->GetPinCount());
-    delete transaction;
-  });
-
-  t1.join();
-  t2.join();
-
-  bpm->UnpinPage(HEADER_PAGE_ID, true);
-  delete key_schema;
-  delete disk_manager;
-  delete bpm;
-  remove("test.db");
-  remove("test.log");
-}
-
-TEST(BPlusTreeConcurrentTest, InsertTest1_SingleLayer) {
+TEST(BPlusTreeConcurrentTest, InsertTest1) {
   // create KeyComparator and index schema
   Schema *key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema);
@@ -237,7 +168,8 @@ TEST(BPlusTreeConcurrentTest, InsertTest1_SingleLayer) {
   remove("test.log");
 }
 
-TEST(BPlusTreeConcurrentTest, DISABLED_InsertTest1_MultiLayer) {
+// Additional test.
+TEST(BPlusTreeConcurrentTest, InsertTest1_MultiLayer) {
   // create KeyComparator and index schema
   Schema *key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema);
@@ -290,7 +222,8 @@ TEST(BPlusTreeConcurrentTest, DISABLED_InsertTest1_MultiLayer) {
   remove("test.log");
 }
 
-TEST(BPlusTreeConcurrentTest, DISABLED_InsertTest1_Massive) {
+// Additional test.
+TEST(BPlusTreeConcurrentTest, InsertTest1_Massive) {
   // create KeyComparator and index schema
   Schema *key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema);
@@ -305,7 +238,7 @@ TEST(BPlusTreeConcurrentTest, DISABLED_InsertTest1_Massive) {
   (void)header_page;
   // keys to Insert
   std::vector<int64_t> keys;
-  int64_t scale_factor = 100000;
+  int64_t scale_factor = 10000;
   for (int64_t key = 1; key < scale_factor; key++) {
     keys.push_back(key);
   }
@@ -316,11 +249,11 @@ TEST(BPlusTreeConcurrentTest, DISABLED_InsertTest1_Massive) {
   for (auto key : keys) {
     rids.clear();
     index_key.SetFromInteger(key);
-    EXPECT_TRUE(tree.GetValue(index_key, &rids));
-    EXPECT_EQ(rids.size(), 1);
+    ASSERT_TRUE(tree.GetValue(index_key, &rids));
+    ASSERT_EQ(rids.size(), 1);
 
     int64_t value = key & 0xFFFFFFFF;
-    EXPECT_EQ(rids[0].GetSlotNum(), value);
+    ASSERT_EQ(rids[0].GetSlotNum(), value);
   }
 
   int64_t start_key = 1;
@@ -328,12 +261,12 @@ TEST(BPlusTreeConcurrentTest, DISABLED_InsertTest1_Massive) {
   index_key.SetFromInteger(start_key);
   for (auto iterator = tree.Begin(index_key); iterator != tree.end(); ++iterator) {
     auto location = (*iterator).second;
-    EXPECT_EQ(location.GetPageId(), 0);
-    EXPECT_EQ(location.GetSlotNum(), current_key);
+    ASSERT_EQ(location.GetPageId(), 0);
+    ASSERT_EQ(location.GetSlotNum(), current_key);
     current_key = current_key + 1;
   }
 
-  EXPECT_EQ(current_key, keys.size() + 1);
+  ASSERT_EQ(current_key, keys.size() + 1);
 
   bpm->UnpinPage(HEADER_PAGE_ID, true);
   delete key_schema;
@@ -395,6 +328,7 @@ TEST(BPlusTreeConcurrentTest, InsertTest2) {
   remove("test.log");
 }
 
+// Additional test. Haven't passed it yet :(
 TEST(BPlusTreeConcurrentTest, DISABLED_InsertTest2_Massive) {
   // create KeyComparator and index schema
   Schema *key_schema = ParseCreateStatement("a bigint");
@@ -402,21 +336,25 @@ TEST(BPlusTreeConcurrentTest, DISABLED_InsertTest2_Massive) {
   DiskManager *disk_manager = new DiskManager("test.db");
   BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
   // create b+ tree
-  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator);
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator, 4, 4);
   // create and fetch header_page
   page_id_t page_id;
   auto header_page = bpm->NewPage(&page_id);
   (void)header_page;
   // keys to Insert
   std::vector<int64_t> keys;
-  int64_t scale_factor = 100000;
+  int64_t scale_factor = 1000;
   int total_thread = 2;
   for (int64_t key = 1; key < scale_factor; key++) {
     keys.push_back(key);
   }
+  // shuffle keys
+  std::random_shuffle(keys.begin(), keys.end());
+
   int64_t millisec, query_rate, ins_rate;
   auto start = std::chrono::steady_clock::now();
   LaunchParallelTest(total_thread, InsertHelperSplit, &tree, keys, total_thread);
+  tree.Draw(bpm, "concur");
   auto end = std::chrono::steady_clock::now();
   millisec = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
   ins_rate = scale_factor * 1000 / millisec;
