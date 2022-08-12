@@ -1,0 +1,32 @@
+name: Test
+# Will be triggered when I push to my private repo
+on: 
+  workflow_dispatch:
+  watch:
+    types: started
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout Private Source Repository
+        # Get the private source code from the private repository.
+        uses: actions/checkout@v3
+        with:
+          repository: endless-hu/CMU-bustub
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Setup Build Environment
+        run: sudo bash build_support/packages.sh -y
+
+      - name: Build the Project
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+          make -j 2
+          make build-tests
+
+      - name: "Run All Tests"
+        run: make check-tests
