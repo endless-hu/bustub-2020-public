@@ -2,8 +2,6 @@ name: Lab Test
 # Will be triggered when I push to my private repo
 on: 
   workflow_dispatch:
-  watch:
-    types: started
 
 jobs:
   test:
@@ -33,16 +31,18 @@ jobs:
           cd build
           cmake ..
           make -j 2
-          make build-tests
+          make build-tests -j 2
 
       - name: Run All Unit Tests
         run: |
           cd priv_repo/build
-          make check-tests
+          timeout 2m make check-tests -j 2
           cd ..
           # copy test source code to this repo
           rm -rf ../this_repo/test
           cp -r test ../this_repo/test/
+          # copy commit histroy to this repo
+          git log > ../this_repo/src_commit_history.txt
 
       - name: Update /test
         uses: EndBug/add-and-commit@v9
