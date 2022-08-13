@@ -216,7 +216,20 @@ TEST(LockManagerTest, MixedSXLockTest_2PL) {
 }
 
 TEST(LockManagerTest, MixedSXLockTest_RC) {
-  /** Test the correctness after multiple, mixed S-lock and X-lock under READ_COMMITTED */
+  /** Test the correctness after multiple, mixed S-lock and X-lock under READ_COMMITTED
+   *
+   *                                Test Procedure
+   *                        ------------------------------
+   *          T0           +             T1            +         T2          +         T3
+   *         BEGIN         |            BEGIN          |        BEGIN        |        BEGIN
+   *        S-Lock(A)      |          S-Lock(A)        |      X-Lock(A) ...  |
+   *      sleep 100ms ..   |        sleep 100ms ..     |                     |
+   *        release(A)     |         release(A)        |                     |        S-Lock(A)
+   *                       |                           |                     |      sleep 100ms ..
+   *                       |                           |   Get X-Lock here   |        release(A)
+   *
+   */
+
   LockManager lock_mgr{};
   TransactionManager txn_mgr{&lock_mgr};
   RID rid{0, 0};
@@ -256,7 +269,7 @@ TEST(LockManagerTest, MixedSXLockTest_RC) {
   });
   /** Thread 2 wants to get an X-lock on rid after T0 and T1 got S-lock.
    * So it should be blocked for 100 ms
-   * During the end of waiting, T3 will wake up and grab another S-lock, then sleep for another 100 ms
+   * At the end of waiting, T3 will wake up and grab another S-lock, then sleep for another 100 ms
    * Finally, T2 should sleep for at least 180 ms
    * */
   std::thread t2([&] {

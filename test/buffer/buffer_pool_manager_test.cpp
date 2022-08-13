@@ -13,9 +13,11 @@
 #include "buffer/buffer_pool_manager.h"
 #include <chrono>
 #include <cstdio>
+#include <queue>
 #include <random>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include "gtest/gtest.h"
 
 namespace bustub {
@@ -45,18 +47,7 @@ std::mutex lk;
 
 void thread_newpages1(BufferPoolManager *bpm, std::vector<page_id_t> *new_pages) {
   page_id_t page_id_tmp;
-  // Scenario: The buffer pool is empty. We should be able to create a new page.
-  auto *pg = bpm->NewPage(&page_id_tmp);
-  {
-    const std::lock_guard<std::mutex> guard(lk);
-    EXPECT_NE(pg, nullptr);
-    new_pages->push_back(page_id_tmp);
-    // Scenario: Once we have a page, we should be able to read and write content.
-    snprintf(pg->GetData(), PAGE_SIZE, "Hello from thread 1");
-    EXPECT_EQ(0, strcmp(pg->GetData(), "Hello from thread 1"));
-  }
-  // Delay for some time to allow thread 2 to create some new pages
-  std::this_thread::sleep_for(std::chrono::microseconds(5));
+  Page *pg;
   // Scenario: We should be able to create new pages until we fill up the buffer pool.
   while ((pg = bpm->NewPage(&page_id_tmp)) != nullptr) {
     {
@@ -70,16 +61,7 @@ void thread_newpages1(BufferPoolManager *bpm, std::vector<page_id_t> *new_pages)
 
 void thread_newpages2(BufferPoolManager *bpm, std::vector<page_id_t> *new_pages) {
   page_id_t page_id_tmp;
-  // Scenario: The buffer pool is empty. We should be able to create a new page.
-  auto *pg = bpm->NewPage(&page_id_tmp);
-  {
-    const std::lock_guard<std::mutex> guard(lk);
-    EXPECT_NE(pg, nullptr);
-    // Scenario: Once we have a page, we should be able to read and write content.
-    snprintf(pg->GetData(), PAGE_SIZE, "Hello from thread 2");
-    EXPECT_EQ(0, strcmp(pg->GetData(), "Hello from thread 2"));
-    new_pages->push_back(page_id_tmp);
-  }
+  Page *pg;
   // Scenario: We should be able to create new pages until we fill up the buffer pool.
   while ((pg = bpm->NewPage(&page_id_tmp)) != nullptr) {
     {
@@ -321,6 +303,170 @@ TEST(BufferPoolManagerTest, ParallelTest) {
     EXPECT_NE(nullptr, bpm->NewPage(&page_id_temp));
     EXPECT_EQ(nullptr, bpm->FetchPage(0));
   }
+
+  // Shutdown the disk manager and remove the temporary file we created.
+  disk_manager->ShutDown();
+  remove("test.db");
+
+  delete bpm;
+  delete disk_manager;
+}
+
+TEST(BufferPoolManagerTest, RaceReadWriteTest) {
+  const std::string db_name = "test.db";
+  const size_t buffer_pool_size = 100;
+  const char EMPTY_PAGE[PAGE_SIZE] = {0};
+
+  std::unordered_map<page_id_t, char[PAGE_SIZE]> pages;
+  std::random_device r;
+  std::default_random_engine rng(r());
+  std::uniform_int_distribution<char> uniform_dist(0);
+
+  auto *disk_manager = new DiskManager(db_name);
+  auto *bpm = new BufferPoolManager(buffer_pool_size, disk_manager);
+  Page *page;
+  page_id_t page_id_tmp = 0;
+
+  std::atomic<int> done(0);
+
+  page = bpm->NewPage(&page_id_tmp);
+  EXPECT_EQ(page_id_tmp, 0);
+  EXPECT_EQ(0, std::memcmp(page->GetData(), EMPTY_PAGE, PAGE_SIZE));
+  bpm->UnpinPage(page_id_tmp, true);
+
+  int total_threads = 3;
+  std::vector<std::thread> threads;
+  for (int thread_itr = 0; thread_itr < total_threads; thread_itr++) {
+    // This thread reads and writes pages
+    threads.push_back(std::thread([&] {
+      Page *p;
+      for (int iter = 0; iter < 5; iter++) {
+        char random_data[PAGE_SIZE];
+        for (size_t i = 0; i < PAGE_SIZE; i++) random_data[i] = uniform_dist(rng);
+
+        p = bpm->FetchPage(page_id_tmp);
+        p->WLatch();
+        std::memcpy(p->GetData(), random_data, PAGE_SIZE);
+        EXPECT_EQ(0, std::memcmp(p->GetData(), random_data, PAGE_SIZE));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        EXPECT_EQ(0, std::memcmp(p->GetData(), random_data, PAGE_SIZE));
+        p->WUnlatch();
+        bpm->UnpinPage(page_id_tmp, true);
+      }
+    }));
+  }
+  for (auto &thread : threads) thread.join();
+
+  // Shutdown the disk manager and remove the temporary file we created.
+  disk_manager->ShutDown();
+  remove("test.db");
+
+  delete bpm;
+  delete disk_manager;
+}
+
+TEST(BufferPoolManagerTest, ParallelReadWriteTest) {
+  const std::string db_name = "test.db";
+  const size_t buffer_pool_size = 100;
+  const char EMPTY_PAGE[PAGE_SIZE] = {0};
+
+  std::unordered_map<page_id_t, char[PAGE_SIZE]> pages;
+  std::random_device r;
+  std::default_random_engine rng(r());
+  std::uniform_int_distribution<char> uniform_dist(0);
+
+  auto *disk_manager = new DiskManager(db_name);
+  auto *bpm = new BufferPoolManager(buffer_pool_size, disk_manager);
+  Page *page;
+  page_id_t page_id_tmp = 0;
+
+  std::atomic<int> done(0);
+
+  // This thread creates new pages and writes random data to them
+  std::thread t_newpages([&] {
+    for (size_t i = 0; i < 10 * buffer_pool_size; i++) {
+      page_id_t page_id;
+      while ((page = bpm->NewPage(&page_id)) == nullptr)
+        ;
+      EXPECT_EQ(page_id, page_id_tmp);
+      page_id_tmp++;
+
+      char random_data[PAGE_SIZE];
+      {
+        std::lock_guard<std::mutex> lock(lk);
+        for (size_t j = 0; j < PAGE_SIZE; j++) pages[page_id][j] = uniform_dist(rng);
+        pages[page_id][PAGE_SIZE / 2] = '\0';
+        pages[page_id][PAGE_SIZE - 1] = '\0';
+        std::memcpy(random_data, pages[page_id], PAGE_SIZE);
+      }
+      page->WLatch();
+      // Check sanity of the page data
+      EXPECT_EQ(0, std::memcmp(EMPTY_PAGE, page->GetData(), PAGE_SIZE));
+      std::memcpy(page->GetData(), random_data, PAGE_SIZE);
+      EXPECT_EQ(0, std::memcmp(random_data, page->GetData(), PAGE_SIZE));
+      page->WUnlatch();
+    }
+    done++;
+  });
+
+  // This thread unpins pages
+  std::thread t_unpin([&] {
+    while (!done.load()) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      std::vector<page_id_t> page_ids;
+      {
+        std::lock_guard<std::mutex> lock(lk);
+        for (auto &page_id : pages) page_ids.push_back(page_id.first);
+      }
+      // randomly pick some pages to unpin
+      std::random_shuffle(page_ids.begin(), page_ids.end());
+      int num = std::min(static_cast<int>(page_ids.size()), static_cast<int>(uniform_dist(rng)) % 51);
+      for (int i = 0; i < num; i++) bpm->UnpinPage(page_ids[i], true);
+    }
+  });
+
+  t_newpages.join();
+  t_unpin.join();
+  // Unpin all pages
+  for (auto &page_id : pages) bpm->UnpinPage(page_id.first, true);
+  // Check results
+  for (auto &page_id : pages) {
+    page = bpm->FetchPage(page_id.first);
+    EXPECT_NE(nullptr, page);
+    EXPECT_EQ(0, std::memcmp(page_id.second, page->GetData(), PAGE_SIZE));
+    bpm->UnpinPage(page_id.first, true);
+  }
+
+  // -----------------------------------------------------------------------------------------------
+
+  std::queue<page_id_t> pinned_page_ids;
+  int total_threads = 4;
+  std::vector<std::thread> threads;
+  for (int thread_itr = 0; thread_itr < total_threads; thread_itr++) {
+    // This thread reads and writes pages
+    threads.push_back(std::thread([&] {
+      Page *p;
+      std::vector<page_id_t> page_ids;
+      for (page_id_t i = 0; i < static_cast<int>(10 * buffer_pool_size); i++) page_ids.push_back(i);
+      std::random_shuffle(page_ids.begin(), page_ids.end());
+
+      for (auto &page_id : page_ids) {
+        while ((p = bpm->FetchPage(page_id)) == nullptr)
+          ;
+        char random_data[PAGE_SIZE];
+        for (size_t j = 0; j < PAGE_SIZE; j++) random_data[j] = uniform_dist(rng);
+
+        p->WLatch();
+        std::memcpy(p->GetData(), random_data, PAGE_SIZE);
+        EXPECT_EQ(0, std::memcmp(random_data, p->GetData(), PAGE_SIZE));
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        EXPECT_EQ(0, std::memcmp(random_data, p->GetData(), PAGE_SIZE));
+        p->WUnlatch();
+        bpm->UnpinPage(page_id, true);
+      }
+    }));
+  }
+  for (auto &thread : threads) thread.join();
 
   // Shutdown the disk manager and remove the temporary file we created.
   disk_manager->ShutDown();

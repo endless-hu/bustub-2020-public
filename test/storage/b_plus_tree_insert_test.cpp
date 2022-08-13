@@ -148,7 +148,7 @@ TEST(BPlusTreeTests, ManyLevelInsertTest) {
   DiskManager *disk_manager = new DiskManager("test.db");
   BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
   // create b+ tree
-  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator, 4, 4);
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator, 2, 3);
   GenericKey<8> index_key;
   RID rid;
   // create transaction
@@ -159,7 +159,7 @@ TEST(BPlusTreeTests, ManyLevelInsertTest) {
   auto header_page = bpm->NewPage(&page_id);
   (void)header_page;
 
-  int64_t scale_factor = 100;
+  int64_t scale_factor = 10;
   std::vector<int64_t> keys;
   for (int64_t i = 1; i < scale_factor; i++) {
     keys.push_back(i);
@@ -221,7 +221,7 @@ TEST(BPlusTreeTests, MassiveInsertSequentialTest) {
   auto header_page = bpm->NewPage(&page_id);
   (void)header_page;
 
-  int64_t scale_factor = 100000;
+  int64_t scale_factor = 10000;
   std::vector<int64_t> keys;
   int64_t millisec, ins_rate, read_rate;
   for (int64_t i = 1; i < scale_factor; i++) {
@@ -301,7 +301,7 @@ TEST(BPlusTreeTests, MassiveInsertShuffledTest) {
   auto header_page = bpm->NewPage(&page_id);
   (void)header_page;
 
-  int64_t scale_factor = 100000;
+  int64_t scale_factor = 10000;
   std::vector<int64_t> keys;
   int64_t millisec, ins_rate, read_rate;
   for (int64_t i = 1; i < scale_factor; i++) {

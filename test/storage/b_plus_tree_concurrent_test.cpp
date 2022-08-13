@@ -185,11 +185,11 @@ TEST(BPlusTreeConcurrentTest, InsertTest1_MultiLayer) {
   // keys to Insert
   std::vector<int64_t> keys;
   int64_t scale_factor = 100;
+  std::cout << "Addtional Test: Insert 10000 records into a 4-4 tree" << std::endl;
   for (int64_t key = 1; key < scale_factor; key++) {
     keys.push_back(key);
   }
   LaunchParallelTest(2, InsertHelper, &tree, keys);
-  tree.Draw(bpm, "concur");
   std::vector<RID> rids;
   GenericKey<8> index_key;
   for (auto key : keys) {
@@ -238,7 +238,8 @@ TEST(BPlusTreeConcurrentTest, InsertTest1_Massive) {
   (void)header_page;
   // keys to Insert
   std::vector<int64_t> keys;
-  int64_t scale_factor = 10000;
+  int64_t scale_factor = 1000;
+  std::cout << "Addtional Test: Insert " << scale_factor << " records into a 4-4 tree" << std::endl;
   for (int64_t key = 1; key < scale_factor; key++) {
     keys.push_back(key);
   }
@@ -328,33 +329,30 @@ TEST(BPlusTreeConcurrentTest, InsertTest2) {
   remove("test.log");
 }
 
-// Additional test. Haven't passed it yet :(
-TEST(BPlusTreeConcurrentTest, DISABLED_InsertTest2_Massive) {
+// Additional test. Also for benchmark.
+TEST(BPlusTreeConcurrentTest, InsertTest2_Massive_Sequential) {
   // create KeyComparator and index schema
   Schema *key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema);
   DiskManager *disk_manager = new DiskManager("test.db");
   BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
   // create b+ tree
-  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator, 4, 4);
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator);
   // create and fetch header_page
   page_id_t page_id;
   auto header_page = bpm->NewPage(&page_id);
   (void)header_page;
   // keys to Insert
   std::vector<int64_t> keys;
-  int64_t scale_factor = 1000;
+  int64_t scale_factor = 10000;
   int total_thread = 2;
   for (int64_t key = 1; key < scale_factor; key++) {
     keys.push_back(key);
   }
-  // shuffle keys
-  std::random_shuffle(keys.begin(), keys.end());
 
   int64_t millisec, query_rate, ins_rate;
   auto start = std::chrono::steady_clock::now();
   LaunchParallelTest(total_thread, InsertHelperSplit, &tree, keys, total_thread);
-  tree.Draw(bpm, "concur");
   auto end = std::chrono::steady_clock::now();
   millisec = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
   ins_rate = scale_factor * 1000 / millisec;
@@ -389,8 +387,72 @@ TEST(BPlusTreeConcurrentTest, DISABLED_InsertTest2_Massive) {
   remove("test.db");
   remove("test.log");
   std::cout << "====== Benchmark Report ======" << std::endl
-            << "Insert: " << ins_rate << "records/s" << std::endl
-            << "Query: " << query_rate << "records/s" << std::endl;
+            << "Insert: " << ins_rate << " records/s" << std::endl
+            << "Query: " << query_rate << " records/s" << std::endl;
+}
+
+// Additional test. Also for benchmark.
+TEST(BPlusTreeConcurrentTest, InsertTest2_Massive_Shuffled) {
+  // create KeyComparator and index schema
+  Schema *key_schema = ParseCreateStatement("a bigint");
+  GenericComparator<8> comparator(key_schema);
+  DiskManager *disk_manager = new DiskManager("test.db");
+  BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
+  // create b+ tree
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator);
+  // create and fetch header_page
+  page_id_t page_id;
+  auto header_page = bpm->NewPage(&page_id);
+  (void)header_page;
+  // keys to Insert
+  std::vector<int64_t> keys;
+  int64_t scale_factor = 10000;
+  int total_thread = 4;
+  for (int64_t key = 1; key < scale_factor; key++) {
+    keys.push_back(key);
+  }
+  // shuffle keys
+  std::random_shuffle(keys.begin(), keys.end());
+
+  int64_t millisec, query_rate, ins_rate;
+  auto start = std::chrono::steady_clock::now();
+  LaunchParallelTest(total_thread, InsertHelperSplit, &tree, keys, total_thread);
+  auto end = std::chrono::steady_clock::now();
+  millisec = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+  ins_rate = scale_factor * 1000 / millisec;
+  std::cout << "Inserting " << scale_factor << " records with " << total_thread << " threads takes " << millisec
+            << " ms" << std::endl;
+
+  start = std::chrono::steady_clock::now();
+  LaunchParallelTest(total_thread, QueryHelperSplit, &tree, keys, total_thread);
+  end = std::chrono::steady_clock::now();
+  millisec = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+  query_rate = scale_factor * 1000 / millisec;
+  std::cout << "Querying " << scale_factor << " records with " << total_thread << " threads takes " << millisec << " ms"
+            << std::endl;
+
+  GenericKey<8> index_key;
+  int64_t start_key = 1;
+  int64_t current_key = start_key;
+  index_key.SetFromInteger(start_key);
+  for (auto iterator = tree.Begin(index_key); iterator != tree.end(); ++iterator) {
+    auto location = (*iterator).second;
+    EXPECT_EQ(location.GetPageId(), 0);
+    EXPECT_EQ(location.GetSlotNum(), current_key);
+    current_key = current_key + 1;
+  }
+
+  EXPECT_EQ(current_key, keys.size() + 1);
+
+  bpm->UnpinPage(HEADER_PAGE_ID, true);
+  delete key_schema;
+  delete disk_manager;
+  delete bpm;
+  remove("test.db");
+  remove("test.log");
+  std::cout << "====== Benchmark Report ======" << std::endl
+            << "Insert: " << ins_rate << " records/s" << std::endl
+            << "Query: " << query_rate << " records/s" << std::endl;
 }
 
 TEST(BPlusTreeConcurrentTest, DeleteTest1) {
