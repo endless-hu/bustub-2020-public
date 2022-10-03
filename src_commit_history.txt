@@ -1,6 +1,7 @@
-commit 6d0ae60b154c9c3b92dc85ca7ec39c3b5fb91ccd
+commit 4ea75894e576769b777899795f70728ab445c9cc
 Author: Zhijing Hu <qq906555703@gmail.com>
-Date:   Sat Aug 13 19:39:40 2022 +0800
+Date:   Mon Oct 3 21:03:51 2022 +0800
 
-    Add a test to check b_plus_tree_delete
-    haven't passed it yet.
+    B+Tree Index:
+    Modified the concurrency-related parts of removing.
+    Potential bugs exist.

@@ -543,6 +543,93 @@ TEST(BPlusTreeConcurrentTest, DeleteTest2) {
   remove("test.log");
 }
 
+/**
+ * Insert many keys, then parallelly delete all
+*/
+TEST(BPlusTreeConcurrentTest, MassiveDeleteTest1_Additional) {
+  // create KeyComparator and index schema
+  Schema *key_schema = ParseCreateStatement("a bigint");
+  GenericComparator<8> comparator(key_schema);
+
+  DiskManager *disk_manager = new DiskManager("test.db");
+  BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
+  // create b+ tree
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator);
+  GenericKey<8> index_key;
+  // create and fetch header_page
+  page_id_t page_id;
+  auto header_page = bpm->NewPage(&page_id);
+  (void)header_page;
+
+  int64_t scale_factor = 10000;
+  std::vector<int64_t> keys;
+  for (int64_t key = 1; key <= scale_factor; key++) {
+    keys.push_back(key);
+  }
+  // sequential insert
+  InsertHelper(&tree, keys);
+
+  std::vector<int64_t> remove_keys(keys);
+  std::random_shuffle(remove_keys.begin(), remove_keys.end());
+  LaunchParallelTest(2, DeleteHelper, &tree, remove_keys);
+
+  EXPECT_TRUE(tree.IsEmpty());
+  for (auto iterator = tree.Begin(index_key); iterator != tree.end(); ++iterator) {
+    // Since there's no key in the tree, no commands in this body should be executed
+    EXPECT_TRUE(false);
+  }
+
+  bpm->UnpinPage(HEADER_PAGE_ID, true);
+  delete key_schema;
+  delete disk_manager;
+  delete bpm;
+  remove("test.db");
+  remove("test.log");
+}
+
+/**
+ * Same as above, but use splitter
+*/
+TEST(BPlusTreeConcurrentTest, MassiveDeleteTest2_Additional) {
+  // create KeyComparator and index schema
+  Schema *key_schema = ParseCreateStatement("a bigint");
+  GenericComparator<8> comparator(key_schema);
+
+  DiskManager *disk_manager = new DiskManager("test.db");
+  BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
+  // create b+ tree
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator);
+  GenericKey<8> index_key;
+  // create and fetch header_page
+  page_id_t page_id;
+  auto header_page = bpm->NewPage(&page_id);
+  (void)header_page;
+
+  int64_t scale_factor = 10000;
+  std::vector<int64_t> keys;
+  for (int64_t key = 1; key <= scale_factor; key++) {
+    keys.push_back(key);
+  }
+  // sequential insert
+  InsertHelper(&tree, keys);
+
+  std::vector<int64_t> remove_keys(keys);
+  std::random_shuffle(remove_keys.begin(), remove_keys.end());
+  LaunchParallelTest(2, DeleteHelperSplit, &tree, remove_keys, 2);
+
+  EXPECT_TRUE(tree.IsEmpty());
+  for (auto iterator = tree.Begin(index_key); iterator != tree.end(); ++iterator) {
+    EXPECT_TRUE(false);
+  }
+
+  bpm->UnpinPage(HEADER_PAGE_ID, true);
+  delete key_schema;
+  delete disk_manager;
+  delete bpm;
+  remove("test.db");
+  remove("test.log");
+}
+
 TEST(BPlusTreeConcurrentTest, MixTest) {
   // create KeyComparator and index schema
   Schema *key_schema = ParseCreateStatement("a bigint");
