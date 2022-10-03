@@ -42,7 +42,7 @@ jobs:
           rm -rf ../this_repo/test
           cp -r test ../this_repo/test/
           # copy commit histroy to this repo
-          git log > ../this_repo/src_commit_history.txt
+          git --no-pager log > ../this_repo/src_commit_history.txt
 
       - name: Update /test
         uses: EndBug/add-and-commit@v9
