@@ -179,9 +179,11 @@ Besides, the B+ tree should support concurrent operations and take measures to e
 - [`src/include/storage/index/index_iterator.h`](./src/include/storage/index/index_iterator.h)
 - [`src/storage/index/index_iterator.cpp`](./src/storage/index/index_iterator.cpp)
 
-### Potential Bugs and Future Improvements
+### <del>Potential Bugs and Future Improvements</del> All Fixed
 
-According to [the test](https://github.com/endless-hu/bustub-2020-public/actions/runs/3179024793/attempts/1), there are still some memory leaks. Besides, when under concurrenct insertion and deletion scenarios, the B+ tree may suffer lost deletions.
+**Previously** I did not perfectly implemented the concurrency control when removing keys. In detail, when `Coalesce()`, I should take the **WLatch** of **both** the node and its neighbor, which is different from the scenario of spliting.
+
+<del>According to [the test](https://github.com/endless-hu/bustub-2020-public/actions/runs/3179024793/attempts/1), there are still some memory leaks. Besides, when under concurrenct insertion and deletion scenarios, the B+ tree may suffer lost deletions.</del>
 
 ### Development Log and Test
 
