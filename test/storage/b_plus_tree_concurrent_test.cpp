@@ -5,6 +5,7 @@
 #include <chrono>  // NOLINT
 #include <cstdio>
 #include <functional>
+#include <random>
 #include <thread>                   // NOLINT
 #include "b_plus_tree_test_util.h"  // NOLINT
 
@@ -13,7 +14,7 @@
 #include "storage/index/b_plus_tree.h"
 
 namespace bustub {
-std::mutex mtx;
+
 // helper function to launch multiple threads
 template <typename... Args>
 void LaunchParallelTest(uint64_t num_threads, Args &&...args) {
@@ -56,10 +57,6 @@ void InsertHelperSplit(BPlusTree<GenericKey<8>, RID, GenericComparator<8>> *tree
   for (auto key : keys) {
     if (static_cast<uint64_t>(key) % total_threads == thread_itr) {
       int64_t value = key & 0xFFFFFFFF;
-      // {
-      //   std::lock_guard<std::mutex> lock(mtx);
-      //   std::cout << "Inserting key " << key << " by thread " << std::this_thread::get_id() << std::endl;
-      // }
       rid.Set(static_cast<int32_t>(key >> 32), value);
       index_key.SetFromInteger(key);
       tree->Insert(index_key, rid, transaction);
@@ -545,7 +542,7 @@ TEST(BPlusTreeConcurrentTest, DeleteTest2) {
 
 /**
  * Insert many keys, then parallelly delete all
-*/
+ */
 TEST(BPlusTreeConcurrentTest, MassiveDeleteTest1_Additional) {
   // create KeyComparator and index schema
   Schema *key_schema = ParseCreateStatement("a bigint");
@@ -555,30 +552,56 @@ TEST(BPlusTreeConcurrentTest, MassiveDeleteTest1_Additional) {
   BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
   // create b+ tree
   BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator);
-  GenericKey<8> index_key;
   // create and fetch header_page
   page_id_t page_id;
   auto header_page = bpm->NewPage(&page_id);
   (void)header_page;
 
   int64_t scale_factor = 10000;
+  std::cout << "Addtional Test: Insert " << scale_factor << " keys,  then parallelly delete all" << std::endl;
   std::vector<int64_t> keys;
   for (int64_t key = 1; key <= scale_factor; key++) {
     keys.push_back(key);
   }
-  // sequential insert
-  InsertHelper(&tree, keys);
 
-  std::vector<int64_t> remove_keys(keys);
-  std::random_shuffle(remove_keys.begin(), remove_keys.end());
-  LaunchParallelTest(2, DeleteHelper, &tree, remove_keys);
+  for (int iter = 0; iter < 10; iter++) {
+    // sequential insert
+    std::random_shuffle(keys.begin(), keys.end());
+    InsertHelper(&tree, keys);
+    // verify insertion
+    std::vector<RID> rids;
+    GenericKey<8> index_key;
+    for (auto key : keys) {
+      rids.clear();
+      index_key.SetFromInteger(key);
+      ASSERT_TRUE(tree.GetValue(index_key, &rids));
+      ASSERT_EQ(rids.size(), 1);
 
-  EXPECT_TRUE(tree.IsEmpty());
-  for (auto iterator = tree.Begin(index_key); iterator != tree.end(); ++iterator) {
-    // Since there's no key in the tree, no commands in this body should be executed
-    EXPECT_TRUE(false);
+      int64_t value = key & 0xFFFFFFFF;
+      ASSERT_EQ(rids[0].GetSlotNum(), value);
+    }
+    int64_t start_key = 1;
+    int64_t current_key = start_key;
+    index_key.SetFromInteger(start_key);
+    for (auto iterator = tree.Begin(index_key); iterator != tree.end(); ++iterator) {
+      auto location = (*iterator).second;
+      ASSERT_EQ(location.GetPageId(), 0);
+      ASSERT_EQ(location.GetSlotNum(), current_key);
+      current_key = current_key + 1;
+    }
+    ASSERT_EQ(current_key, keys.size() + 1);
+
+    // start removing
+    std::vector<int64_t> remove_keys(keys);
+    std::random_shuffle(remove_keys.begin(), remove_keys.end());
+    LaunchParallelTest(2, DeleteHelper, &tree, remove_keys);
+    // verify insertion
+    EXPECT_TRUE(tree.IsEmpty());
+    for (auto iterator = tree.Begin(index_key); iterator != tree.end(); ++iterator) {
+      // Since there's no key in the tree, no commands in this body should be executed
+      EXPECT_TRUE(false);
+    }
   }
-
   bpm->UnpinPage(HEADER_PAGE_ID, true);
   delete key_schema;
   delete disk_manager;
@@ -589,12 +612,13 @@ TEST(BPlusTreeConcurrentTest, MassiveDeleteTest1_Additional) {
 
 /**
  * Same as above, but use splitter
-*/
+ */
 TEST(BPlusTreeConcurrentTest, MassiveDeleteTest2_Additional) {
   // create KeyComparator and index schema
   Schema *key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema);
 
+  int num_threads = 4;
   DiskManager *disk_manager = new DiskManager("test.db");
   BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
   // create b+ tree
@@ -606,22 +630,29 @@ TEST(BPlusTreeConcurrentTest, MassiveDeleteTest2_Additional) {
   (void)header_page;
 
   int64_t scale_factor = 10000;
+  std::cout << "Addtional Test: Insert " << scale_factor << " keys,  then parallelly delete all using splitter" << std::endl;
   std::vector<int64_t> keys;
   for (int64_t key = 1; key <= scale_factor; key++) {
     keys.push_back(key);
   }
-  // sequential insert
-  InsertHelper(&tree, keys);
+  for (int iter = 0; iter < 10; iter++) {
+    // sequential insert
+    std::random_shuffle(keys.begin(), keys.end());
+    InsertHelper(&tree, keys);
 
-  std::vector<int64_t> remove_keys(keys);
-  std::random_shuffle(remove_keys.begin(), remove_keys.end());
-  LaunchParallelTest(2, DeleteHelperSplit, &tree, remove_keys, 2);
+    std::vector<int64_t> remove_keys(keys);
+    std::random_shuffle(remove_keys.begin(), remove_keys.end());
+    LaunchParallelTest(num_threads, DeleteHelperSplit, &tree, remove_keys, num_threads);
 
-  EXPECT_TRUE(tree.IsEmpty());
-  for (auto iterator = tree.Begin(index_key); iterator != tree.end(); ++iterator) {
-    EXPECT_TRUE(false);
+    EXPECT_TRUE(tree.IsEmpty());
+    for (auto iterator = tree.Begin(index_key); iterator != tree.end(); ++iterator) {
+      EXPECT_TRUE(false);
+    }
+    for (auto iterator = tree.begin(); iterator != tree.end(); ++iterator) {
+      std::cout << (*iterator).first.ToString() << std::endl;
+      EXPECT_TRUE(false);
+    }
   }
-
   bpm->UnpinPage(HEADER_PAGE_ID, true);
   delete key_schema;
   delete disk_manager;
@@ -667,6 +698,105 @@ TEST(BPlusTreeConcurrentTest, MixTest) {
   }
 
   EXPECT_EQ(size, 5);
+
+  bpm->UnpinPage(HEADER_PAGE_ID, true);
+  delete key_schema;
+  delete disk_manager;
+  delete bpm;
+  remove("test.db");
+  remove("test.log");
+}
+
+/**
+ * Launch some threads to insert keys in [1, 1000]
+ * Launch some threads to remove keys in [1, 1000]
+ * Keep running for 5 seconds, then check the shape of the tree
+ */
+TEST(BPlusTreeConcurrentTest, MassiveMixTest) {
+  std::cout << "Addtional Test: insert and delete happen at the same time" << std::endl;
+
+  // create KeyComparator and index schema
+  Schema *key_schema = ParseCreateStatement("a bigint");
+  GenericComparator<8> comparator(key_schema);
+
+  DiskManager *disk_manager = new DiskManager("test.db");
+  BufferPoolManager *bpm = new BufferPoolManager(50, disk_manager);
+  // create b+ tree
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", bpm, comparator);
+  GenericKey<8> index_key;
+
+  // create and fetch header_page
+  page_id_t page_id;
+  auto header_page = bpm->NewPage(&page_id);
+  (void)header_page;
+
+  std::vector<std::thread> insert_thread_group;
+  std::vector<std::thread> remove_thread_group;
+  int num_threads = 4;
+  std::atomic<bool> done{false};
+  for (int i = 0; i < num_threads; i++) {
+    insert_thread_group.push_back(std::thread([&, i] {  // `i` captured by copy
+      // create transaction
+      Transaction *transaction = new Transaction(i);
+      GenericKey<8> index_key;
+      RID rid;
+      // Initialize random number generator
+      std::random_device rd;   // Will be used to obtain a seed for the random number engine
+      std::mt19937 gen(rd());  // Standard mersenne_twister_engine seeded with rd()
+      std::uniform_int_distribution<long> distrib(1, 1000);
+      while (!done.load()) {
+        int64_t key = distrib(gen);
+        int64_t value = key & 0xFFFFFFFF;
+        rid.Set(static_cast<int32_t>(key >> 32), value);
+        index_key.SetFromInteger(key);
+        tree.Insert(index_key, rid, transaction);
+      }
+      delete transaction;
+    }));
+    remove_thread_group.push_back(std::thread([&, i] {  // `i` captured by copy
+      // create transaction
+      Transaction *transaction = new Transaction(2 * i + 1);
+      GenericKey<8> index_key;
+      RID rid;
+      // Initialize random number generator
+      std::random_device rd;   // Will be used to obtain a seed for the random number engine
+      std::mt19937 gen(rd());  // Standard mersenne_twister_engine seeded with rd()
+      std::uniform_int_distribution<long> distrib(1, 1000);
+      while (!done.load()) {
+        int64_t key = distrib(gen);
+        int64_t value = key & 0xFFFFFFFF;
+        rid.Set(static_cast<int32_t>(key >> 32), value);
+        index_key.SetFromInteger(key);
+        tree.Remove(index_key, transaction);
+      }
+      delete transaction;
+    }));
+  }
+  std::this_thread::sleep_for(std::chrono::seconds(5));
+  done.store(true);
+  // join all threads
+  for (int i = 0; i < num_threads; i++) {
+    insert_thread_group[i].join();
+    remove_thread_group[i].join();
+  }
+
+  // Verify the shape
+  // first get all keys
+  std::vector<int64_t> keys;
+  for (auto iterator = tree.begin(); iterator != tree.end(); ++iterator) {
+    keys.push_back((*iterator).first.ToString());
+  }
+  // query them one by one
+  std::vector<RID> rids;
+  for (auto key : keys) {
+    rids.clear();
+    index_key.SetFromInteger(key);
+    EXPECT_TRUE(tree.GetValue(index_key, &rids));
+    EXPECT_EQ(rids.size(), 1);
+
+    int64_t value = key & 0xFFFFFFFF;
+    EXPECT_EQ(rids[0].GetSlotNum(), value);
+  }
 
   bpm->UnpinPage(HEADER_PAGE_ID, true);
   delete key_schema;
