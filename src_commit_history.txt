@@ -1,3 +1,15 @@
+commit 57577a68d39d9a1a3d1d9839aa84af20dcb78846
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Tue Oct 4 14:09:33 2022 +0800
+
+    Fix a concurrency-related bug in B+ Tree index:
+      When `CoalesceOrRedistribute`, we should take the WLatch of the
+      neighbor node.
+    -------
+    Reduce the size of leaf page and internal page in
+    `B_plus_tree_concurrent_test.cpp` to make the split and merge
+    happen more frequently.
+
 commit 35ca65aeb77c9e4f5d778a7495baef7e9dad562b
 Author: Zhijing Hu <qq906555703@gmail.com>
 Date:   Tue Oct 4 10:07:06 2022 +0800
