@@ -1,4 +1,4 @@
-name: Lab Test
+name: Starter Test
 # Will be triggered when I push to my private repo
 on: 
   workflow_dispatch:
@@ -15,6 +15,7 @@ jobs:
           repository: endless-hu/CMU-bustub
           token: ${{ secrets.GH_PAT }}
           path: priv_repo
+          fetch-depth: 0
 
       - name: Checkout This Repo
         uses: actions/checkout@v3
@@ -31,12 +32,24 @@ jobs:
           cd build
           cmake ..
           make -j 2
-          make build-tests -j 2
+          make starter_test
 
       - name: Run All Unit Tests
         run: |
           cd priv_repo/build
-          timeout 2m make check-tests -j 2
+          ./test/starter_test
+          echo
+          echo ======== Check memory leak ==========
+          echo
+          valgrind --trace-children=yes \
+            --leak-check=full \
+            --track-origins=yes \
+            --soname-synonyms=somalloc=*jemalloc* \
+            --error-exitcode=1 \
+            --suppressions=../build_support/valgrind.supp \
+            ./test/starter_test
+
+
           cd ..
           # copy test source code to this repo
           rm -rf ../this_repo/test

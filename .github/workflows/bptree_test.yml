@@ -1,0 +1,87 @@
+name: B+ Tree Test
+# Will be triggered when I push to my private repo
+on: 
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout Private Source Repository
+        # Get the private source code from the private repository.
+        uses: actions/checkout@v3
+        with:
+          repository: endless-hu/CMU-bustub
+          token: ${{ secrets.GH_PAT }}
+          path: priv_repo
+          fetch_depth: 0
+
+      - name: Checkout This Repo
+        uses: actions/checkout@v3
+        with:
+          path: this_repo
+
+      - name: Setup Build Environment
+        run: sudo bash priv_repo/build_support/packages.sh -y
+
+      - name: Build the Project
+        run: |
+          cd priv_repo
+          mkdir build
+          cd build
+          cmake ..
+          make -j 2
+          make b_plus_tree_insert_test
+          make b_plus_tree_delete_test
+          make b_plus_tree_concurrent_test
+
+      - name: Run All Unit Tests
+        run: |
+          cd priv_repo/build
+          ./test/b_plus_tree_insert_test
+          ./test/b_plus_tree_delete_test
+          ./test/b_plus_tree_concurrent_test
+          echo 
+          echo ======== Check memory leak ==========
+          echo
+          valgrind --trace-children=yes \
+            --leak-check=full \
+            --track-origins=yes \
+            --soname-synonyms=somalloc=*jemalloc* \
+            --error-exitcode=1 \
+            --suppressions=../build_support/valgrind.supp \
+            ./test/b_plus_tree_insert_test
+          
+          valgrind --trace-children=yes \
+            --leak-check=full \
+            --track-origins=yes \
+            --soname-synonyms=somalloc=*jemalloc* \
+            --error-exitcode=1 \
+            --suppressions=../build_support/valgrind.supp \
+            ./test/b_plus_tree_delete_test
+
+          valgrind --trace-children=yes \
+            --leak-check=full \
+            --track-origins=yes \
+            --soname-synonyms=somalloc=*jemalloc* \
+            --error-exitcode=1 \
+            --suppressions=../build_support/valgrind.supp \
+            ./test/b_plus_tree_concurrent_test
+          
+
+          cd ..
+          # copy test source code to this repo
+          rm -rf ../this_repo/test
+          cp -r test ../this_repo/test/
+          # copy commit histroy to this repo
+          git --no-pager log > ../this_repo/src_commit_history.txt
+
+      - name: Update /test
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: Zhijing Hu
+          author_email: qq906555703@gmail.com
+          cwd: ./this_repo/
+          message: "Update /test"
+          
