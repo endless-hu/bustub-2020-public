@@ -10,3 +10,1331 @@ Date:   Tue Oct 4 10:07:06 2022 +0800
        tests.
     3. Add an assert in `buffer_pool_manager` to make sure the bpm
        will NOT fetch INVALID_PAGE_ID.
+
+commit 4ea75894e576769b777899795f70728ab445c9cc
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Mon Oct 3 21:03:51 2022 +0800
+
+    B+Tree Index:
+    Modified the concurrency-related parts of removing.
+    Potential bugs exist.
+
+commit 65515ef6da06254a14018b70d9fce4ef7e54675c
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Mon Oct 3 20:53:11 2022 +0800
+
+    Add concurrent tests about deletion.
+
+commit e5e24b9b86dd0bf760e52a0aa16d0aa150b8d9f1
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Mon Oct 3 20:40:59 2022 +0800
+
+    Passed all delete tests.
+    Bug fix to the B+Tree Index, especially the index iterator:
+    1. It should unpin the last page once it reaches the end;
+    2. It should NOT continue when it reaches the end.
+
+commit 924fff35ed7328f9df7f987d5b1e8914b6f7d716
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Mon Oct 3 15:53:21 2022 +0800
+
+    Passed all delete tests.
+    Potential problem: buffer pool leakage(aka. did not delete some
+    pages).
+
+commit d9151994850065b526872273a53b2e21fb1701c3
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Mon Oct 3 15:31:08 2022 +0800
+
+    Passed the massive delete test.
+    Still have problems when deleting all keys.
+
+commit f2f894addd596b976190fb18f4ce81aa88c92fb8
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Mon Oct 3 10:34:50 2022 +0800
+
+    Start rewriting B+Tree Index to pass the more rigorous
+    `b_plus_tree_delete_test`.
+    
+    Rewrote `Remove()`, `CoalesceOrRedistribute()`, and
+    `Redistribute()`.
+
+commit 6d0ae60b154c9c3b92dc85ca7ec39c3b5fb91ccd
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Sat Aug 13 19:39:40 2022 +0800
+
+    Add a test to check b_plus_tree_delete
+    haven't passed it yet.
+
+commit a02959c66b33ff366d4baa5416142e947470134c
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Sat Aug 13 17:06:19 2022 +0800
+
+    update bpm test
+
+commit 4eed9c4155aec37180572cc72de3e1dfd7f3a886
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Sat Aug 13 16:41:52 2022 +0800
+
+    Updates to this project:
+    1. Fix the concurrency issues in buffer pool manager, now the
+       memory is sane;
+    2. Fix the concurrency control in B+ tree. Now it can correctly
+       perform parallel insertion;
+    3. Add strong checks against array boundary access in BPlusTreePage
+
+commit 0ae10834467291601aec107bfc00f63004cc7356
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Fri Aug 12 18:54:11 2022 +0800
+
+    Improve concurrent B+ tree insertion.
+    
+    Still has some problems
+
+commit 7d83857dd263e0a1292f2f1f4e847f9ea7bd82f0
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Wed Mar 9 19:08:26 2022 +0800
+
+    Disabled some enhanced B+tree concurrent tests.
+    
+    Amend a small logical bug in seq_scan_executors.
+    We should NOT request lock if the rid was locked
+
+commit fb4de0bd47f14ddcd67939c43d12d11ece55a45e
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Sun Feb 27 19:10:25 2022 +0800
+
+    Fix concurrent insertion
+    Still have the problem of dead lock
+    But shallow tree's operation is OK
+
+commit da7a84d5dbbc2dd400be7089e8a8f17420af19ab
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Sun Feb 27 12:36:32 2022 +0800
+
+    Fix a bug in B+ tree
+    Previously, B+ tree did NOT save replaced pages
+    So I just change all UnpinPage(*, false) to `true`.
+    Now the B+ tree can insert arbitrary number of records
+
+commit 834eb48b54d62a19796f0abc2b1b8bee23e42288
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Fri Feb 25 16:21:56 2022 +0800
+
+    Temporarily save B+tree
+
+commit b71ea7a73af089df43611b83bd423f2ae511a226
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Fri Feb 25 16:21:20 2022 +0800
+
+    Find problem with massive insertion
+    enhance b_plus_tree_insert_test
+
+commit 71e709404dc7612364106fa311421ad4fd8f2504
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Fri Feb 25 14:42:32 2022 +0800
+
+    Add ReaderWriterLock for B+tree root_id_
+
+commit 3edeb3969b4322d01f72881437986a65137e047a
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Sun Feb 20 19:22:49 2022 +0800
+
+    Add test case for repeatable read in txn_test
+    Amend some lock protocol inconsistencies in SeqScan and Update executors
+    Amend lock amanger so that it could handle LockUpgrade correctly
+
+commit 3b04bb09992f6d6930671335229f9a97fbab8a72
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Sat Feb 19 20:13:01 2022 +0800
+
+    Add test cases for lock manager. Update README.md
+    Fixed concurrency issues in lock manager
+
+commit 60e5d5f5facb0a0891eadb583ac994426debd1c7
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Thu Feb 17 12:40:16 2022 +0800
+
+    Update README.md for tests in bpm and lru_replacer
+    Fix a potential parallel safe problem in bpm
+
+commit e20b30c4307b3c64c17d4736d1519bd63f7a5ea7
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Wed Feb 16 21:28:27 2022 +0800
+
+    Add Parallel test for buffer pool manager
+
+commit 11598fdb0b7c7e7086bd7db9a3ec2c6ae1e54062
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Wed Feb 16 15:01:36 2022 +0800
+
+    Add rigorous thread-safty tests for LRUReplacer
+
+commit 2101e09ee2c551e69a3e6e30cdfa43614e979be9
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Wed Feb 16 11:19:32 2022 +0800
+
+    fix alloc-dealloc mismatch problem in p0_starter.h
+
+commit 8c0867be075f8b5abfec6526cf9ffbaf02ecbb76
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Wed Feb 16 10:07:03 2022 +0800
+
+    make buffer_pool_manager thread-safe
+
+commit aeed9ed4c2a90ab8dc890edb5adf08d891915d00
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Tue Feb 15 20:04:18 2022 +0800
+
+    Update README.md
+    Remove my `build_and_test.sh` script
+    because I found equivalent cmake command already provided
+
+commit f9d1e55990a43d148add6ff7bdecd3e834c0b392
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Thu Dec 30 16:42:46 2021 +0800
+
+    update build_and_test.sh
+
+commit 583a4c2b6240cf9badde7983b4eec1d29682adae
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Thu Dec 30 16:37:58 2021 +0800
+
+    improve the test script
+
+commit b38b39a9a5ddc24c0572b9a4605c193208059760
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Wed Dec 29 17:24:29 2021 +0800
+
+    fix a bug in my test script and update README.md
+
+commit b33f293993654a3a2021b7d3740b0053e77c134a
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Wed Dec 29 17:13:14 2021 +0800
+
+    supress logs
+    Add a auto test script
+
+commit f5ed7c2159aa6154b2c44e82f8dc502a4c9038de
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Mon Dec 27 14:45:28 2021 +0800
+
+    Modify CMake to continue supporting gtest
+    Try writing parallel tests to lru_replacer
+
+commit 8ed6f83ddd8683d58df83acae56ac9dc983682af
+Author: Zhijing Hu <66413488+wordless-dot@users.noreply.github.com>
+Date:   Tue Oct 12 14:17:00 2021 +0800
+
+    Update hw1.md
+
+commit 15bd4d2bed2f6fd1d5f4b45cea49df17e09b6575
+Author: Zhijing Hu <66413488+wordless-dot@users.noreply.github.com>
+Date:   Tue Oct 12 14:01:20 2021 +0800
+
+    Update README.md
+
+commit 3d2a91c99b19e72e6578f13e882a4facea333735
+Author: Zhijing Hu <66413488+wordless-dot@users.noreply.github.com>
+Date:   Tue Oct 12 13:32:13 2021 +0800
+
+    Add files via upload
+
+commit 324b3e4da9762c53d6362d9aac6c1c7ad14db720
+Author: Zhijing Hu <66413488+wordless-dot@users.noreply.github.com>
+Date:   Tue Oct 12 13:31:33 2021 +0800
+
+    Update README.md
+
+commit d68323cf66b30c34a39d02cd1655c5ac4e0d27b6
+Author: wordless-dot <66413488+wordless-dot@users.noreply.github.com>
+Date:   Sun Oct 3 11:51:11 2021 +0800
+
+    Update README.md
+
+commit 41293fd0f257dd2d9bd44c67ba25796e88e42622
+Author: wordless-dot <66413488+wordless-dot@users.noreply.github.com>
+Date:   Mon Sep 27 14:16:12 2021 +0800
+
+    Update README.md
+
+commit 5990dc6b995eb09c3950417702161150ab71c155
+Author: wordless-dot <66413488+wordless-dot@users.noreply.github.com>
+Date:   Mon Sep 27 14:10:00 2021 +0800
+
+    Add files via upload
+    
+    Upload random number generation program source code in ./document for convenience of testing B+tree.
+
+commit bee28111305ec9bde4adc37501f879ec405d9155
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Mon Sep 27 14:00:54 2021 +0800
+
+    fix bugs in b_plus_tree
+
+commit 33418ca738ea3285ec79dc65bfa7b244d4309a1e
+Author: wordless-dot <66413488+wordless-dot@users.noreply.github.com>
+Date:   Mon Sep 27 13:34:59 2021 +0800
+
+    Delete proj1.md
+
+commit 244eb042cf24a8c8d72e4788d9184cc3042f99f8
+Author: wordless-dot <66413488+wordless-dot@users.noreply.github.com>
+Date:   Mon Sep 27 13:22:39 2021 +0800
+
+    Update README.md
+
+commit d7641003b5461b9ab787b107ef357cd80e01f665
+Author: wordless-dot <66413488+wordless-dot@users.noreply.github.com>
+Date:   Mon Sep 27 11:07:05 2021 +0800
+
+    Add Test Guides to README file
+
+commit a65797c7ea15d31d2758505fe83a3320ce77d348
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Sun Sep 26 23:26:53 2021 +0800
+
+    Update README to my report
+    Some minor modifications
+
+commit cd1e0ff7dee0c35bad5f09f2c44e332bd7ee74d8
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Sat Sep 25 08:01:23 2021 +0800
+
+    fix a small bug in DFS
+
+commit 1e7b1378731b2d426b76c4ca7f5e47c61dbe2eaf
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Sat Sep 25 05:16:28 2021 +0800
+
+    Potential bugs in:
+    lock_manager and b_plus_tree_concurrent_test
+    They sometimes fail, but most of time OK
+
+commit db7d77c10eb190d21f32ef74750a1fd7bcc350d4
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Fri Sep 24 20:35:41 2021 +0800
+
+    achieve b+tree concurrent control
+    can correctly insert
+    but not consider carefully with remove
+    there are some bugs in remove operation with latch
+    Besides everything is OK
+
+commit 8dcfc71939bef5f89f685c9610518793d5663147
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Fri Sep 24 16:58:38 2021 +0800
+
+    All done!!!
+
+commit 161d180d1b1af73b1410a761aa5f574b4f5614ea
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Wed Sep 22 14:05:55 2021 +0800
+
+    Project 4 - Task1&2 Complete
+
+commit 1a7584be2466b3d5af15180112e50ecefd5f23c7
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Sun Sep 19 12:17:52 2021 +0800
+
+    Complete Project 3
+    it seems that there is sanity problems
+    in the execution process during nested loop join and index join
+
+commit de79c72b0ee9aa10b942f15bc191259439df699f
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Sat Sep 18 16:33:55 2021 +0800
+
+    passed all tests in executor_test
+    fix memory leak problem in insert_executor
+    still need to implement nest_index_join, update and index_scan
+
+commit 0b52de5dd4ab76633d9b496d6e4e4c04f66c4c7f
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Tue Sep 14 18:38:50 2021 +0800
+
+    complete aggregation plan
+    passed SimpleAggregationTest
+
+commit 2b57b8cccfb2bb05b29600b3a1fe196ad4f30a0e
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Tue Sep 14 09:36:14 2021 +0800
+
+    minor optimization to nest_loop_join, change recursive implementation to loop
+
+commit 014e56a82b8cd8023b1cc64bfb650d43f5e80d08
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Mon Sep 13 21:37:31 2021 +0800
+
+    Pass SimpleNextLoopJoinTest. Notice its log, something seems wierd
+
+commit d49117d51a9039d21d3768922940c00d6ce031f3
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Sun Sep 12 20:22:26 2021 +0800
+
+    project 3 - passed the first four tests, four remaining
+
+commit 1a7853005f2cb6282fbf3f400d3e14cd420c09c0
+Author: Your Name <you@example.com>
+Date:   Tue Aug 31 10:56:43 2021 +0800
+
+    project2 - b+tree, suppress all the LOG_INFO debug messages
+
+commit 3f1428e3aca58c11738e5d1eaa15b93d6f55780b
+Author: Your Name <you@example.com>
+Date:   Mon Aug 30 12:40:12 2021 +0800
+
+    b+tree index with simple mutex layer, need to be revised afterwards. fix a bug in end() method
+
+commit d68f33256864135f680778968330b6f4032a948d
+Author: Your Name <you@example.com>
+Date:   Mon Aug 30 10:21:45 2021 +0800
+
+    b+tree without concurrency
+
+commit eed3f67f8981dd7eee173f3c29aa65af764749e5
+Author: Your Name <you@example.com>
+Date:   Mon Aug 23 09:02:59 2021 +0800
+
+    bp tree insert complete
+
+commit 3611e32089905e475fda0905d6618de02f39c2ba
+Author: Your Name <you@example.com>
+Date:   Wed Aug 18 09:13:21 2021 +0800
+
+    project 1 finished
+
+commit 9d4e45032983fd1dfa776b39a2c2aa3576bbf051
+Author: Your Name <you@example.com>
+Date:   Thu Aug 12 14:37:22 2021 +0800
+
+    project0 completed.
+
+commit 444765a7fcccbee8295fda5313c8e0647245ec86
+Author: Wan Shen Lim <wanshen.lim@gmail.com>
+Date:   Fri Jul 9 02:56:04 2021 +0800
+
+    Add PR template. (#156)
+
+commit 349cea4d774a76d2960e696a2fbb3893f11a96ea
+Author: Jin Dong <greenmoon55@gmail.com>
+Date:   Mon Apr 5 09:35:40 2021 -0700
+
+    Use SetUp() and TearDown() to automatically clean up testing files (#141)
+
+commit 14922dc6ddddaba311b7bdcba1bea48ce8d38810
+Author: Moaz El Defrawy <moaz.eldefrawy@gmail.com>
+Date:   Mon Feb 1 05:54:19 2021 +0200
+
+    Use "std::move" instead of "move" in starter_test.cpp. (#134)
+
+commit 1a703eb556465ead0284b69fcca1d05c42e5a225
+Author: Yuhong Zhang <34732434+YuhongZhang98@users.noreply.github.com>
+Date:   Sun Dec 6 12:15:48 2020 -0500
+
+    Fall 2020 P4 fixes for APIs (#128)
+    
+    Co-authored-by: xinzhu-cai <hzh13528@163.com>
+
+commit 9a4d4e8306966fef90dfd945e1e4d0656624750b
+Author: Andy Pavlo <pavlo@cs.brown.edu>
+Date:   Tue Dec 1 12:55:26 2020 -0500
+
+    CircleCI Fixes: Cleaned up package list, Limit build to 2 cores, Add lint/tidy checks (#129)
+
+commit 42c25625f6b2d1a324e40c59f9af795da3d65372
+Author: Xinzhu Cai <hzh13528@163.com>
+Date:   Sat Nov 28 12:04:58 2020 -0500
+
+    2020 P4 Concurrency Control (#127)
+    
+    Co-authored-by: YuhongZhang98 <danielzhangyh@gmail.com>
+    Co-authored-by: kjobanputra <kunjoban@gmail.com>
+    Co-authored-by: Ricky Xu <xuchen727@hotmail.com>
+
+commit ac23182ce063c91861e2af7d53f07732d6408631
+Merge: 4ff771f 36f623e
+Author: wuwenw <55009204+wuwenw@users.noreply.github.com>
+Date:   Thu Nov 19 12:58:42 2020 -0500
+
+    Merge pull request #125 from cmu-db/2020_p3
+    
+    Fix Index Key in Test
+
+commit 36f623e72678e93199e4eaba8739f15bc47b4c32
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Thu Nov 19 00:25:24 2020 -0500
+
+    fix index key
+
+commit 4ff771f1acc9d0acf726c935aaf65854642cd77d
+Merge: e3b34de c1536e9
+Author: wuwenw <55009204+wuwenw@users.noreply.github.com>
+Date:   Thu Nov 12 19:56:42 2020 -0500
+
+    Merge pull request #124 from cmu-db/2020_p3
+    
+    Add Output Schema to Limit Plan
+
+commit c1536e918bd696848f7a030a393a809669a854c5
+Merge: 4d7d1bc e3b34de
+Author: wuwenw <55009204+wuwenw@users.noreply.github.com>
+Date:   Thu Nov 12 14:15:19 2020 -0500
+
+    Merge branch 'master' into 2020_p3
+
+commit 4d7d1bca88eb474c35e3a5c2f7a964bab64afc49
+Merge: 6537ff5 d704c83
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Thu Nov 12 14:11:42 2020 -0500
+
+    Merge branch '2020_p3' of https://github.com/cmu-db/bustub into 2020_p3
+
+commit 6537ff5b3c7ae2ff1266059aff77fc17c61470ee
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Thu Nov 12 14:11:02 2020 -0500
+
+    add output schema to limit plan
+
+commit e3b34de5a8d08c15b1e01fa0044ff28094a93544
+Merge: 284f5b5 d704c83
+Author: wuwenw <55009204+wuwenw@users.noreply.github.com>
+Date:   Sun Nov 8 15:41:07 2020 -0500
+
+    Merge pull request #123 from cmu-db/2020_p3
+    
+    Project 3 Update
+
+commit d704c83f98fcd240393a4d565cf36de4b5e41fc5
+Merge: 17a7ccb 284f5b5
+Author: wuwenw <55009204+wuwenw@users.noreply.github.com>
+Date:   Sun Nov 8 12:20:03 2020 -0500
+
+    Merge branch 'master' into 2020_p3
+
+commit 284f5b5a15958529d1b3876a108a74eecf74fd3d
+Author: Ziyi Yan <ziyi.yan@foxmail.com>
+Date:   Sun Nov 8 16:02:17 2020 +0800
+
+    Ignore vagrant configuration directory. (#110)
+
+commit 17a7ccb45da388d223d6c9e814ed4b740f44d6d4
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Sat Nov 7 22:30:33 2020 -0500
+
+    add one more table
+
+commit e8251c2df03e60f5a8e679d2db49ff7658865820
+Author: Ricky Zhou <zhou0ricky@gmail.com>
+Date:   Sat Nov 7 17:34:06 2020 -0500
+
+    updated nested index join plan
+
+commit ede09b7dcdf5342858b098c6f1cdda358cd9df12
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Fri Nov 6 15:45:42 2020 -0500
+
+    minor fix
+
+commit ee6f561338d32b5dd8655b44d33181038d928b02
+Merge: 9ec03b9 53e20b7
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Fri Nov 6 15:30:36 2020 -0500
+
+    Merge branch '2020-p3' of https://github.com/cmu-db/bustub into 2020-p3
+
+commit 9ec03b939fd2e1dd7a31c4dc530ef7cb79f15ff6
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Fri Nov 6 15:30:15 2020 -0500
+
+    fix leak
+
+commit 53e20b7fe9b09f0134c072b64064e404ac6b3b92
+Merge: 80fd02d a01f0a1
+Author: wuwenw <55009204+wuwenw@users.noreply.github.com>
+Date:   Fri Nov 6 00:32:54 2020 -0500
+
+    Merge branch 'master' into 2020-p3
+
+commit 80fd02d9258765ee46ef8fad0316884969bb2d67
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Fri Nov 6 00:29:47 2020 -0500
+
+    p3 update && fix
+
+commit a01f0a1b3e7d2bfe715f7128d1f9e433473b86db
+Merge: 954ca1f 65e3834
+Author: wuwenw <55009204+wuwenw@users.noreply.github.com>
+Date:   Thu Nov 5 17:00:08 2020 -0500
+
+    Merge pull request #121 from cmu-db/2020-p3
+    
+    p3 update && fix
+
+commit 65e383419db21f9c9dc0b0fda0a63ac5ae463d00
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Thu Nov 5 14:27:42 2020 -0500
+
+    p3 update && fix
+
+commit 7d1f2e8cc68d0a1aa7eed214a4df0df43b01fd6a
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Thu Nov 5 14:21:45 2020 -0500
+
+    p3 update && fix
+
+commit 954ca1ffebd44015c0ae83bb87b31daf8f8188a1
+Author: Ziyi Yan <ziyi.yan@foxmail.com>
+Date:   Mon Nov 2 12:55:37 2020 +0800
+
+    Use memcpy and memcmp for BinaryDataTest in BufferPoolManagerTest. (#113)
+
+commit ca5dbf36145c4813daa0b0693d772e33716d4753
+Merge: c604775 17cc86e
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Sun Nov 1 23:22:02 2020 -0500
+
+    Merge pull request #118 from l-iberty/master
+    
+    fix bug in BPLUSTREE_TYPE::ToGraph
+
+commit 17cc86efd43c3192b4282f8927a290c3b8563452
+Author: l-iberty <2593093242@qq.com>
+Date:   Mon Nov 2 09:29:46 2020 +0800
+
+    fix bug in BPLUSTREE_TYPE::ToGraph
+
+commit c604775119aa0bc582d0d702d0c330603a9eb3ca
+Merge: 3af3981 e7e898e
+Author: wuwenw <55009204+wuwenw@users.noreply.github.com>
+Date:   Sat Oct 31 12:08:04 2020 -0400
+
+    Merge pull request #116 from cmu-db/2020_p3
+    
+    2020 p3
+
+commit e7e898e08d5b49f0661b7187630ae52f7dfd7345
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Fri Oct 30 16:02:08 2020 -0400
+
+    rename catalog
+
+commit 9ff9fafef5f9515cfd0a285362206e88cdc45cf5
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Fri Oct 30 14:40:58 2020 -0400
+
+    rename catalog
+
+commit 9272004a89c171f0eb2991a263ca984d17a32bae
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Fri Oct 30 14:36:07 2020 -0400
+
+    minor fix
+
+commit 37b570060affb5bd4b4f691c024de7b3ef278ca2
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Fri Oct 30 00:34:15 2020 -0400
+
+    minor fix
+
+commit 8d5cf7c8eb8071057b556730223a7735bc0b68b6
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Thu Oct 29 18:59:19 2020 -0400
+
+    format
+
+commit 232bf80232434f7b7f1b018e25e615fe98b1f181
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Thu Oct 29 01:06:36 2020 -0400
+
+    test change
+
+commit e81728f787da91a2c7d944ae7693756f37bf75e4
+Author: wuwenw <wuwenw@andrew.cmu.edu>
+Date:   Thu Oct 29 01:02:15 2020 -0400
+
+    2020_p3
+
+commit 3af398106ade3a1056820592ead749ce7fa043ed
+Merge: 22a4deb 74cea6e
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Mon Oct 12 15:38:22 2020 -0400
+
+    Merge pull request #109 from cmu-db/2020_p2
+    
+    Fix signature for checkpoint 2
+
+commit 74cea6e2532c875553ece1168c0c0a7e26ecee1e
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Fri Oct 9 12:01:25 2020 -0400
+
+    Update comments
+
+commit 7f35ffb555b6e9eb72c707f1f000c1dd8017725d
+Merge: 1ceec7a 22a4deb
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Fri Oct 9 10:06:57 2020 -0400
+
+    Merge branch 'master' into 2020_p2
+
+commit 1ceec7a06dcdc8048316d96aa35598fc0c3e703e
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Fri Oct 9 10:06:18 2020 -0400
+
+    Added the middle separating key for helper function of coalesce
+
+commit 22a4debd046f4c3d484422093e1d34be7e80e58e
+Author: Jimmy <duliujimmy@hotmail.com>
+Date:   Wed Oct 7 04:41:47 2020 +1100
+
+    Remove quotes in find_program hints parameter to allow clang-format and clang-tidy to be found (#107)
+    
+    Co-authored-by: Wan Shen Lim <wanshen.lim@gmail.com>
+
+commit b4813542ed9845af66b1778f2ccfd1114427cc25
+Author: Wan Shen Lim <wanshen.lim@gmail.com>
+Date:   Tue Oct 6 12:55:16 2020 -0400
+
+    Add a CMake safeguard to root CMakeLists.txt. (#99)
+    
+    People tend to accidentally run cmake from the wrong folder, which might
+    nuke their source tree and/or cause weird bugs. This forces an out-of-source
+    CMake build by detecting if you are running cmake in a directory that already
+    contains a CMakeLists.txt.
+    
+    Co-authored-by: Ian Romines <gpahjdr@gmail.com>
+
+commit 189c69a03bdd452e2f98fa361427851b2bf7ac1b
+Merge: 09b59a4 6467f06
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Mon Oct 5 23:25:03 2020 -0400
+
+    Merge pull request #106 from cmu-db/2020_p2
+    
+    CopyFirstFrom function signature updates
+
+commit 6467f06619be0457d60a3b02b712787dc21d5cec
+Merge: 92ced44 09b59a4
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Mon Oct 5 22:33:18 2020 -0400
+
+    Merge branch 'master' into 2020_p2
+
+commit 92ced44af21bdf3cb4306b7fd88466865d38c3f1
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Mon Oct 5 22:33:04 2020 -0400
+
+    Forget to change CopyFirstFrom. Fixed
+
+commit 09b59a4493144b53c515ecd4526c38ae8a4163c6
+Merge: a20ce8c cd4b805
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Mon Oct 5 19:11:43 2020 -0400
+
+    Merge pull request #105 from cmu-db/2020_p2
+    
+    Deleted unnecessary middle_key arguments for the InternalPage
+
+commit cd4b805938bce425c0a4214eb51cfe0d0d83d3d0
+Merge: 83af2f1 a20ce8c
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Mon Oct 5 18:27:19 2020 -0400
+
+    Merge branch 'master' into 2020_p2
+
+commit 83af2f1ae6c0fc74c008491de29517804b51ae0b
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Mon Oct 5 18:27:03 2020 -0400
+
+    Fixed unnecessary argument for InternalPage
+
+commit a20ce8ce38e0437a02d2ac545e6ea4bb0491c357
+Merge: d978074 7bff961
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Mon Oct 5 16:49:52 2020 -0400
+
+    Merge pull request #104 from cmu-db/2020_p2
+    
+    Updated confusing function signatures and add comments
+
+commit 7bff9610e7a6fb6088428700c19734fe53c6d0e4
+Merge: 449b85f d978074
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Mon Oct 5 15:42:07 2020 -0400
+
+    Merge branch 'master' into 2020_p2
+
+commit 449b85fa817005afcb1856d603b1ac480fe2ca90
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Mon Oct 5 15:41:39 2020 -0400
+
+    Add more comments and clean up unused parameters for some of the methods
+
+commit d9780744c1c022af2b7af82edf2e96f6fbe1dc70
+Merge: b00dba6 9928a41
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Sun Oct 4 11:42:38 2020 -0400
+
+    Merge pull request #103 from cmu-db/2020_p2
+    
+    Added out of memory exception type
+
+commit 9928a411cb1211898c02f4d7ae205e10e0d7bb9b
+Merge: 9d9fcf1 b00dba6
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Sun Oct 4 11:11:33 2020 -0400
+
+    Merge branch 'master' into 2020_p2
+
+commit 9d9fcf185441269b4cab490b8ee990e5f6d677d6
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Sun Oct 4 10:40:53 2020 -0400
+
+    Added out of memoery exception type
+
+commit b00dba6c8770ccbee095236204e7150a078f2f32
+Author: Ivan Chen <allenivan@gmail.com>
+Date:   Thu Oct 1 23:37:33 2020 +0800
+
+    fix README.md for build docker image (#101)
+
+commit 1cc1bb2f7b0746c67a974c0554c843ac35519315
+Merge: 0c92f70 442682a
+Author: XU Chen_Ricky <xuchen727@hotmail.com>
+Date:   Wed Sep 30 23:42:29 2020 -0400
+
+    Merge pull request #100 from cmu-db/2020_p2
+    
+    Fixed leaf page Lookup signature
+
+commit 442682a227127a50c0a6beda8ce710a4569e9c9b
+Author: Ricky Xu <xuchen727@hotmail.com>
+Date:   Wed Sep 30 22:39:06 2020 -0400
+
+    Fixed leaf page Lookup signature
+
+commit 0c92f70e36fa7a0f2718dd0e772b42ffb1a0e57c
+Merge: 198abff 421395a
+Author: Yuhong Zhang <34732434+YuhongZhang98@users.noreply.github.com>
+Date:   Tue Sep 29 13:14:38 2020 -0400
+
+    Merge pull request #98 from cmu-db/2020_p2
+    
+    Fall 2020 Project 2 B+ Tree Index
+
+commit 421395adc5d5e7c4edf2bdd3c09ffc1ee0067d04
+Author: YuhongZhang98 <danielzhangyh@gmail.com>
+Date:   Tue Sep 29 00:50:35 2020 -0400
+
+    2020_P2
+
+commit 198abff680ef8bbf163fc25e8bdeb007db860b94
+Merge: 8809472 659869e
+Author: Rohan Aggarwal <rohanagg@andrew.cmu.edu>
+Date:   Fri Sep 25 07:35:51 2020 -0400
+
+    Merge pull request #95 from cmu-db/vagrant
+    
+    Addition of Vagrantfile
+
+commit 659869e91e4b16805a922e07bc30dcbcbf8f1732
+Author: Ian Romines <iromines@andrew.cmu.edu>
+Date:   Fri Sep 18 12:20:00 2020 -0500
+
+    Updated README.md to be more explanatory of the steps involved in creating and running Vagrant boxes and Docker containers.
+
+commit 18d45ff02f404fd3e8ca9dd1d0b259c82894027f
+Author: Ian Romines <iromines@andrew.cmu.edu>
+Date:   Fri Sep 18 12:07:39 2020 -0500
+
+    Moved Vagrantfile to main directory in parity with Dockerfile. Also updated README instructions accordingly.
+
+commit f64f6b9fa4b65c367b497a4b83b7c49ba66b1b74
+Author: Ian Romines <iromines@andrew.cmu.edu>
+Date:   Fri Sep 18 12:05:41 2020 -0500
+
+    Updated README.md with instructions on how to utilize Vagrant and Docker.
+
+commit 8eae7f050735338ba0846943b1aaa231ae9af4ad
+Author: Ian Romines <iromines@andrew.cmu.edu>
+Date:   Fri Sep 18 11:08:52 2020 -0500
+
+    Updated Vagrantfile to work correctly, as well as adding a -y option to packages.sh
+
+commit 55b709100adf6899c6b1cd81f2c4aef04e05e5b0
+Author: Ian Romines <gpahjdr@gmail.com>
+Date:   Fri Sep 18 10:01:55 2020 -0500
+
+    Began work on a Vagrantfile.
+
+commit 88094726d5f34d5baff7e4a777ac135c6bc8fe61
+Author: Rohan Aggarwal <rohanagg@andrew.cmu.edu>
+Date:   Mon Sep 7 21:52:38 2020 -0400
+
+    Add LRUReplacer Infrastructure (#87)
+
+commit d04bbe9598ff2dd8aba27d36793ef7e254f95696
+Author: Preetansh Goyal <preetang@andrew.cmu.edu>
+Date:   Sat Aug 29 23:37:00 2020 -0400
+
+    Adding bustub namespace to P0 files. (#86)
+
+commit 043470616819de5cf116e8135ee68886b9925c18
+Author: Henry Nelson <hcnelson99@gmail.com>
+Date:   Fri Aug 28 17:37:35 2020 -0400
+
+    Make clang-format and clang-tidy configs forward-compatible for students running modern clang versions (>8) (#84)
+    
+    * Make clang-format forward compatible
+    
+    Make clang-format forward compatible with modern clang (>8) by
+    explicitly setting default options which have changed from clang 8 to
+    clang 10.
+    
+    * Disable clang-tidy options added after clang-8
+    
+    This prevents students using modern clang versions from getting
+    clang-tidy errors. One alternative way to resolve this issue would be to
+    actually make the modern clang-tidy fixes in the current codebase, but
+    this patch solves the issue without causing any code churn.
+
+commit 0342ef146f3af3ff5ac600803ca9eec1ff5b33ae
+Author: Henry Nelson <hcnelson99@gmail.com>
+Date:   Fri Aug 28 16:17:05 2020 -0400
+
+    Remove nonportable and unused cmake code (#83)
+    
+    The deleted cmake code is copied from a low-quality stack overflow
+    answer [0]. The answer suggests adding a CMAKE_CXX_FLAG in terms of $<,
+    which is a Makefile-ism. However, CMake is supposed to support other
+    build system targets such as Ninja. Referring to $< breaks the Ninja
+    build. It appears that the __BUSTUBFILE__ macro is unused in the code
+    base anyways so this patch just deletes the unused and buggy CMake code.
+    If this __BUSTUBFILE__ macro is desired, it should be implemented in
+    terms of portable CMake code such as in [1] instead.
+    
+    [0] http://stackoverflow.com/a/16658858
+    [1] https://stackoverflow.com/questions/1706346/file-macro-manipulation-handling-at-compile-time/27990434#27990434
+
+commit e036ac9d8a710427be68f76d6b9e561e0a4fd662
+Author: Andy Pavlo <pavlo@cs.brown.edu>
+Date:   Tue Aug 25 20:26:40 2020 -0400
+
+    Update README.md
+
+commit c7a1af2351f7f67a30f39dc110a1d1048085460b
+Author: Andy Pavlo <pavlo@cs.brown.edu>
+Date:   Tue Aug 25 20:24:57 2020 -0400
+
+    Update README.md
+
+commit e22396d618b2b3d8d1ee5a6d4aaa6429d4c7879a
+Author: Andy Pavlo <pavlo@cs.brown.edu>
+Date:   Tue Aug 25 20:16:00 2020 -0400
+
+    Update README.md
+
+commit e44b32087c00f042424c93c7b2a8918ff2b9acd4
+Author: Andy Pavlo <pavlo@cs.brown.edu>
+Date:   Tue Aug 25 20:13:03 2020 -0400
+
+    Clean up README + add support for Ubuntu 20.04 (#81)
+
+commit e051811afcec0bd0a3fd766578aa94926394b730
+Author: Preetansh Goyal <preetang@andrew.cmu.edu>
+Date:   Mon Aug 24 20:45:52 2020 -0400
+
+    Skeleton Files for Project0 C++ Primer (#78)
+    
+    Co-authored-by: gautam20197 <gautam20197@gmail.com>
+
+commit 0d718339895a3e22cfba4b13a911c24e3491c59a
+Author: Duy <duynguyen.ori75@gmail.com>
+Date:   Wed Aug 19 10:09:11 2020 +0700
+
+    Fix typos + public interfaces in log_record.h (#75)
+
+commit f581f10982706f9217957884f97b564d2287f951
+Author: zhou fan <1247714429@qq.com>
+Date:   Wed Jul 29 16:14:57 2020 +0800
+
+    Initialize page_id in constructor for NEWPAGE LogRecord. (#70)
+
+commit 5972018e0c027b4889f7b07443a132eca79ba2ed
+Author: Qitian Zeng <qzeng3@hawk.iit.edu>
+Date:   Tue Jun 9 19:37:14 2020 -0500
+
+    Fix typo in type.cpp (#66)
+
+commit 7704f90cb1d9f9cc32f648c68b9fa84952bf1796
+Author: Colin Stolley <ccstolley@github.com>
+Date:   Wed May 20 11:35:22 2020 -0500
+
+    Fix a few bugs in DiskManager (#62)
+    
+    * Fix a few bugs with DiskManager.
+    
+    - The constructor doesn't re-check if db_io_ or log_io_ were
+      successfully re-opened if the file doesn't exist. Checks were
+      added for this, and we throw if either file fails to open().
+    
+    - ReadPage() tolerates partial reads that terminate prematurely at
+      EOF, but this will cause the failbit to be set. The error flag
+      is now clear()'ed when less than a page is read.
+    
+    - Like their Write*() counterparts, ReadPage() and ReadLog() should
+      check error flags after each IO operation, and log appropriately
+      if they fail.
+    
+    * Add a few tests for DiskManager, fix extension check.
+    
+    - Verify that empty reads are tolerated
+    - Verify that an exception is thrown if dbfile can't be opened.
+    - Use rfind() to find the last '.' in the filename to locate the extension.
+
+commit 7003fbdbb4b95bffde58043633624de04b6c5e71
+Author: Jigao Luo <luojigao@outlook.com>
+Date:   Wed May 20 18:07:15 2020 +0200
+
+    Fix disk_manager duplicate open mode *std::ios::out* (#56)
+    
+    * Minor fix in buffer pool manager test
+    
+    * Fix disk_manager duplicate open mode
+
+commit f3669c3e6dfb5617b72df16ca84f80fe87df20da
+Author: Xinzhu Cai <hzh13528@163.com>
+Date:   Wed Apr 8 15:56:16 2020 -0400
+
+    Update Projects According to Piazza Discussions (#49)
+    
+    Co-authored-by: Andy Pavlo <pavlo@cs.brown.edu>
+    Co-authored-by: Wan Shen Lim <wanshen.lim@gmail.com>
+
+commit 0bb0669659e71ac98011c6c266d33a2aa9e5697d
+Author: Jigao Luo <luojigao@outlook.com>
+Date:   Tue Apr 7 19:18:54 2020 +0200
+
+    Fix buffer_pool_manager_test snprintf buffer size (#54)
+
+commit caf086904238a0dfda6c4b3cd808e6a1bb2d3f21
+Author: Pinglei Guo <at15@outlook.com>
+Date:   Thu Dec 19 14:03:44 2019 -0800
+
+    Build: Update cpplint for C++17 tuple destructing (#46)
+    
+    Format wants "auto [a,b]", lint wanted "auto[a,b]", this changes lint's mind.
+
+commit feaf3245bc9e09f4e51e57279f342915f5592674
+Author: Wan Shen Lim <wanshen.lim@gmail.com>
+Date:   Thu Nov 28 10:48:37 2019 -0500
+
+    Explicitly zero out the tuple's data on construction. It is unclear why this only has to be done for some submissions; people have obtained full scores without doing this. (#45)
+    
+    We will revisit this issue during winter break.
+
+commit 17477af6f12644f582d2f4adf0adf9de844dbff7
+Author: utkarsh39 <utkarsh39@hotmail.com>
+Date:   Wed Nov 20 11:38:07 2019 -0500
+
+    Initialize global buffer_used variable in disk manager constructor (#44)
+
+commit 2736aa82bee86feb3f756ce8aa4d9505b1c61d74
+Author: utkarsh39 <utkarsh39@hotmail.com>
+Date:   Tue Nov 12 16:38:37 2019 -0500
+
+    Project 4 Logging Tests (#43)
+    
+    Introduces test/recovery/recovery_test.
+
+commit 061ba6f282ab466cc4900b8dccd532bb819eeaa2
+Merge: b67d184 022e23e
+Author: utkarsh39 <utkarsh39@hotmail.com>
+Date:   Sat Nov 9 13:50:54 2019 -0500
+
+    Merge pull request #42 from utkarsh39/Logging
+    
+    Logging and Recovery
+
+commit 022e23e68a8eb836fcab186c5e7f9f7093b2cef1
+Merge: dfdb0ac b67d184
+Author: Utkarsh <utkarsh39@hotmail.com>
+Date:   Sat Nov 9 13:22:35 2019 -0500
+
+    Merge branch 'master' into Logging
+
+commit dfdb0ac984e4a4f4032a98170112905264a30f7c
+Author: Utkarsh <utkarsh39@hotmail.com>
+Date:   Sat Nov 9 13:19:11 2019 -0500
+
+    Setting up P4:Logging
+
+commit b67d18428ea05d3be08d7915a9334a78485531fa
+Author: utkarsh39 <utkarsh39@hotmail.com>
+Date:   Fri Nov 8 20:42:16 2019 -0500
+
+    Fixed unsigned comparison issues in TablePage (#41)
+
+commit 7fbf591942fa6ba97ae3f1613b92fde8b021e516
+Author: Utkarsh <utkarsh39@hotmail.com>
+Date:   Fri Nov 8 19:33:38 2019 -0500
+
+    Fixed bug
+
+commit e1c82633f42549754dda4de100b3c064440cc82d
+Author: Wan Shen Lim <wanshen.lim@gmail.com>
+Date:   Mon Nov 4 09:58:17 2019 -0500
+
+    Fix Schema::GetColIdx. (#38)
+
+commit 96ccf624e5133348ac3a14f712be7f7600f2391a
+Author: Wan Shen Lim <wanshen.lim@gmail.com>
+Date:   Mon Oct 21 19:00:33 2019 -0400
+
+    Execution Engine (#37)
+    
+    Cleans up existing code and adds an execution engine to the system. Students are expected to implement the executors.
+
+commit 71636aa6af6c625a40a370746b53f975bd46927a
+Author: wenxuanqiu <bobbyqiub@gmail.com>
+Date:   Wed Oct 2 19:24:05 2019 -0400
+
+    Project 2 Amendment (#32)
+    
+    Project 2 amendment
+
+commit 121fa746e8088b778afe0ce7293868ac7ac8be04
+Author: wenxuanqiu <bobbyqiub@gmail.com>
+Date:   Mon Sep 30 15:24:03 2019 -0400
+
+    Project 2 Style Changes (#30)
+    
+    * last batch of style changes for P2
+
+commit 82f193b0b38ded174ba02d2dca90b6ec4e71a8de
+Author: Pulkit Agarwal <pulkitag@andrew.cmu.edu>
+Date:   Sun Sep 29 16:59:45 2019 -0400
+
+    Linear Probe Hash Table Starter Code (#29)
+    
+    Add the starter code for Fall 2019 Project 2: Linear Probe Hash Table.
+
+commit 5d2a9d5fe8cef05e5555b715071c1b2897f20f59
+Author: Wan Shen Lim <wanshen.lim@gmail.com>
+Date:   Thu Sep 26 17:40:34 2019 -0400
+
+    Apply naming conventions from Terrier (#25)
+    
+    * Run the clang-tidy naming convention formatter, but do not enforce the check. We will revisit this in Fall 2020.
+
+commit 17f3090b8cdf610f3d2110c9356afd7f79826cb4
+Author: Andy Pavlo <pavlo@cs.brown.edu>
+Date:   Thu Sep 26 13:52:48 2019 -0400
+
+    Rename RWMutex to ReaderWriterLatch, update .gitignore (#26)
+    
+    * Renamed RWMutex to ReaderWriterLatch
+    * Copied over the more complete gitignore from the terrier repo
+
+commit 1474f208a40add7e1a021ef5ac3dd091505c1188
+Author: Wan Shen Lim <wanshen.lim@gmail.com>
+Date:   Mon Sep 23 19:37:39 2019 -0400
+
+    Fix the memory leak in the sample buffer pool test. (#23)
+    
+    Fix the memory leak in the sample buffer pool test, appease the formatter which stopped being happy for some reason.
+
+commit dfe78fa6de382ba583d839b223233cb8d9dd4228
+Author: Wan Shen Lim <wanshen.lim@gmail.com>
+Date:   Thu Sep 19 14:53:39 2019 -0400
+
+    Fix typo for INVALID_PAGE_ID. (#22)
+
+commit 29b140ce241fe9654fe74114564f9b5c6588b444
+Author: Tulio Leao <tupaschoal@gmail.com>
+Date:   Mon Sep 16 18:35:53 2019 -0300
+
+    Convert #define to constexpr (#20)
+    
+    To quote Matt, that gives us "proper namespace-scoping, type-checking, clang-tidy naming checks, and nicer behavior with IDEs".
+
+commit 7583a28b51050aa85c18764e2d20b2b8472c9ec6
+Author: Tulio Leao <tupaschoal@gmail.com>
+Date:   Mon Sep 16 18:10:12 2019 -0300
+
+    Favor constexpr over const (#21)
+
+commit 5eaa41138152ee1fffb0b09cf0b0aa99baff3bed
+Author: Wan Shen Lim <wanshen.lim@gmail.com>
+Date:   Thu Sep 12 13:44:33 2019 -0400
+
+    Fix the type of the buffer pool manager's free list. (#19)
+
+commit e07a06a17585f5d684f88f5e853d10cf5aeffd25
+Author: Wan Shen Lim <wanshen.lim@gmail.com>
+Date:   Thu Sep 12 10:04:17 2019 -0400
+
+    Add make build-tests to build the test executables without running them. (#18)
+
+commit ffcaec59fb5c8111137dd37a6e23a64b340964a1
+Author: songzhaozhe <zhaozhesong@gmail.com>
+Date:   Wed Sep 11 23:50:10 2019 -0400
+
+    Fix clang-tidy in header files used for grading (#16)
+
+commit 891033eff93c5fff5e7ee570ccf7cd2801cb74f5
+Author: DarkZero <weichenk@andrew.cmu.edu>
+Date:   Wed Sep 11 23:30:45 2019 -0400
+
+    Added instructions for making a private repo (#15)
+
+commit cd326e251c0f47ef946dd29b768778205c41ec71
+Merge: 8adfa15 a451535
+Author: DarkZero <weichenk@andrew.cmu.edu>
+Date:   Wed Sep 11 16:26:25 2019 -0400
+
+    Merge pull request #13 from cmu-db/Windows-Readme
+    
+    Added instructions for Windows
+
+commit a4515357188c3c57e580e10a06ec610b972f00fd
+Merge: d47b643 8adfa15
+Author: Wan Shen Lim <wanshen.lim@gmail.com>
+Date:   Wed Sep 11 15:44:14 2019 -0400
+
+    Merge branch 'master' into Windows-Readme
+
+commit 8adfa1593a02d2e9e22b4baf31fec96aef257e63
+Author: Matt Butrovich <mbutrovich@users.noreply.github.com>
+Date:   Wed Sep 11 15:43:40 2019 -0400
+
+    Enable ASAN on Debug builds and update README.md. (#10)
+    
+    * Enable ASAN on Debug builds and update README.md.
+    * Fix memory leak in hash_table_test.
+
+commit d47b643be453d254409635e6feed4b154585b053
+Author: DarkZero <weichenk@andrew.cmu.edu>
+Date:   Wed Sep 11 14:49:03 2019 -0400
+
+    Added instructions for Windows
+
+commit 6c901d72f395ffcfa5da3eb097481cdfc3a56814
+Author: Andy Pavlo <pavlo@cs.brown.edu>
+Date:   Wed Sep 11 14:18:43 2019 -0400
+
+    Added CircleCI badge
+
+commit f3341695eb7930a765524a049c204ead3ad6ca24
+Author: Chenyao Lou <louchenyao@gmail.com>
+Date:   Thu Sep 12 02:13:26 2019 +0800
+
+    Add the CircleCI config file (#6)
+    
+    * try a simple circleci config file
+    
+    * install cmake
+    
+    * apt update before install
+    
+    * fix ..
+    
+    * it supposes to work
+    
+    * fix
+    
+    * ...
+    
+    * fix?
+    
+    * fxk
+    
+    * fxk
+    
+    * ??
+
+commit add728a5f8bf48c71401ead31939fd3ea95fa6cb
+Author: Wan Shen Lim <wanshen.lim@gmail.com>
+Date:   Wed Sep 11 12:58:37 2019 -0400
+
+    NOLINT <thread> in clock_replacer_test (#12)
+
+commit 0fbe07db97736e30bcb5cc41ccfb90c9c37c4a80
+Author: Wan Shen Lim <wanshen.lim@gmail.com>
+Date:   Wed Sep 11 12:41:00 2019 -0400
+
+    Format clock_replacer_test (#11)
+
+commit 81fbd59bc89ab8abd759b76d6a2e7c74e4fca024
+Author: songzhaozhe <zhaozhesong@gmail.com>
+Date:   Wed Sep 11 12:02:23 2019 -0400
+
+    Add clock_replacer sample test (#9)
+
+commit 50f6a5bf066854625473e9574aa557192e4a12c0
+Author: Wan Shen Lim <wanshen.lim@gmail.com>
+Date:   Wed Sep 11 09:44:18 2019 -0400
+
+    Kill sneaky whitespace. (#7)
+
+commit d3ddff892c63fd529844ad0320ae5a9d935333de
+Author: Erik Sargent <esargent@andrew.cmu.edu>
+Date:   Wed Sep 11 09:42:13 2019 -0400
+
+    Update README w/ Linux/Mac info (#8)
+    
+    * Update README w/ Linux/Mac setup
+    
+    Added blurb about using build_support/packages.sh to set up packages on Linux/Mac
+    
+    * Changed header size for Linux/Mac header
+
+commit 075f363e772127686af415fb47e084e34db8785f
+Author: Wan Shen Lim <wanshen.lim@gmail.com>
+Date:   Wed Sep 11 07:22:10 2019 -0400
+
+    Reintroduce buffer pool manager callbacks for grading purposes. (#1)
+    
+    Bring Samantha's grading callbacks back into the buffer pool manager.
+
+commit 165066d10ebd864e215b2d5db4baed77c96a44bf
+Author: songzhaozhe <zhaozhesong@gmail.com>
+Date:   Wed Sep 11 07:20:25 2019 -0400
+
+    Change to frame_id_t, and fix buffer_pool_manager sample test (#4)
+    
+    Fix the buffer_pool_manager starter code.
+    
+    - Store the page table directly in the class.
+    - Fix the scenarios in the sample test.
+
+commit 2fa06cacc6ff0198752a5a116af6fd3015d8029b
+Author: Wan Shen Lim <wanshen.lim@gmail.com>
+Date:   Wed Sep 11 07:15:27 2019 -0400
+
+    Add Docker image, add CI checks, fix CI issues. (#2)
+    
+    - Add a Docker image for use by Travis.
+    - Add packages.sh dependencies script under build_support/.
+    - Add CI checks on Mac: make, check-tests.
+    - Add CI checks on Linux: make, check-format, check-lint, check-clang-tidy, check-tests.
+    - Bump minimum CMake version and avoid using project()'s HOMEPAGE_URL.
+    - Convert missing dependency messages from errors into warnings.
+
+commit 10b9fdee982ee5002df7312af1d35cad62a37bd1
+Author: Andy Pavlo <pavlo@cs.brown.edu>
+Date:   Tue Sep 10 19:16:33 2019 -0400
+
+    Updated README
+
+commit f5ba636ec98d39dcb60d6039edd506caa9e767ef
+Author: Andy Pavlo <pavlo@cs.brown.edu>
+Date:   Tue Sep 10 19:01:31 2019 -0400
+
+    Initial import of BusTube system code (Sept 2019)
+
+commit a6274ed29a3ac7b6eb974743654b1362ea8f9c7f
+Author: Andy Pavlo <pavlo@cs.brown.edu>
+Date:   Tue Sep 10 17:07:00 2019 -0400
+
+    Initial commit
