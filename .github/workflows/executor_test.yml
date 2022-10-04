@@ -30,7 +30,7 @@ jobs:
           cd priv_repo
           mkdir build
           cd build
-          cmake ..
+          cmake -DCMAKE_BUILD_TYPE=DEBUG ..
           make -j 2
           make executor_test
 
@@ -38,16 +38,6 @@ jobs:
         run: |
           cd priv_repo/build
           ./test/executor_test
-          # echo
-          # echo ======== Check memory leak ==========
-          # echo
-          # valgrind --trace-children=yes \
-          #   --leak-check=full \
-          #   --track-origins=yes \
-          #   --soname-synonyms=somalloc=*jemalloc* \
-          #   --error-exitcode=1 \
-          #   --suppressions=../build_support/valgrind.supp \
-          #   ./test/executor_test
 
           cd ..
           # copy test source code to this repo
