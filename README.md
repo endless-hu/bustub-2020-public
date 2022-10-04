@@ -181,7 +181,7 @@ Besides, the B+ tree should support concurrent operations and take measures to e
 
 ### Potential Bugs and Future Improvements
 
-I passed all relevant tests in `./test` folder, and I'm sure I implemented `insert` operation with concurrency support correctly. However, I'm not sure if I achieved correct `delete` operation with concurrency(But the `delete` operation under single thread is still **correct** ). The `b_plus_tree_concurrent_test`is simple and may need more rigorous tests to ensure accuracy. 
+According to [the test](https://github.com/endless-hu/bustub-2020-public/actions/runs/3179024793/attempts/1), there are still some memory leaks. Besides, when under concurrenct insertion and deletion scenarios, the B+ tree may suffer lost deletions.
 
 ### Development Log and Test
 
@@ -237,6 +237,8 @@ To implement a series of executions, including:
 
 The `index_scan_executor` is just equal to sequential scan because I don't know how to utilize the `predicate`. The B+ tree only supports exact key query, if I want a range scan, which means the begin condition is not accurate with keys in the index. 
 
+Besides, there are some memory leaks.
+
 ### Additional Tests
 
 I passed all tests in `./test` folder. Besides, I added several additional tests to verify operations like: 
@@ -246,12 +248,7 @@ I passed all tests in `./test` folder. Besides, I added several additional tests
 - Index Scan
 - Nested Index Join
 
-To verify it, clone my repository and build the test by 
-
-```
-make executor_test
-./test/executor_test
-```
+Please refer to [`./test/execution/executor_test.cpp`](./test/execution/executor_test.cpp).
 
 ## Project 4 - Concurrency Control
 
@@ -301,26 +298,7 @@ make executor_test
 ./test/executor_test
 ```
 
-### <del>Potential Bugs</del>
-
-<del>When I first run the `lock_manager_test`, it got stuck in the first test. Besides, sometimes it would throw error in the first test that **a thread is using some space which was previously allocated and destroyed by another thread**. But both of the situations are undebuggable because when I type `run` in GDB, the test was passed. And I run it again and again but the error never occurred again.</del>
-
-<del>Sometimes the error will occur when I make some changes and run `make`. But still it cannot be caught in GDB.</del>
-
-### <del>Future Improvements</del>
-
-<del>According to the error, **a thread is using some space which was previously allocated and destroyed by another thread**, I can locate the code which causes the error:</del>
-
-<del>In `lock_manager.cpp:212`(Unlock):</del>
-
-```
-if (!lock_table_[rid].request_queue_.empty()) 
-  lock_table_[rid].request_queue_.remove(dummy_req);
-```
-
-<del>I guess that when a thread *(say thread 1)* have removed the desired `Request` *(say the request for RID0)*, another thread *(say thread 2)* at the same time got the iterator of the removed `Request`. Since the `RID` which the iterator is pointing to has been removed, when `operator++` is invoked, the error is throwed.</del>
-
-<del>Therefore, to fix the bug, I shall add `std::lock_guard` in the beginning of the `Unlock` method. But when I tried it, the test had the problem of joining the threads in the end of the test body and the test got stuck. So I give up the try and let the bug remains.</del>
+I added some more rigorous tests to ensure correctness. Please refer to the relevant tests under the `test/` folder.
 
 ### Update On 2022/02/19: Fix Concurrency Bugs
 
@@ -347,3 +325,24 @@ in the course:
 3. But at the same time, the bank decides to pay 10% interest to both *A* and *B*. <- Here's Transaction 2
 
 Transaction 1 and 2 are run in parallel, but the bank system should ensure the consistency of the data after the transactions are executed. 
+
+### <del>Potential Bugs</del>
+
+<del>When I first run the `lock_manager_test`, it got stuck in the first test. Besides, sometimes it would throw error in the first test that **a thread is using some space which was previously allocated and destroyed by another thread**. But both of the situations are undebuggable because when I type `run` in GDB, the test was passed. And I run it again and again but the error never occurred again.</del>
+
+<del>Sometimes the error will occur when I make some changes and run `make`. But still it cannot be caught in GDB.</del>
+
+### <del>Future Improvements</del>
+
+<del>According to the error, **a thread is using some space which was previously allocated and destroyed by another thread**, I can locate the code which causes the error:</del>
+
+<del>In `lock_manager.cpp:212`(Unlock):</del>
+
+```
+if (!lock_table_[rid].request_queue_.empty()) 
+  lock_table_[rid].request_queue_.remove(dummy_req);
+```
+
+<del>I guess that when a thread *(say thread 1)* have removed the desired `Request` *(say the request for RID0)*, another thread *(say thread 2)* at the same time got the iterator of the removed `Request`. Since the `RID` which the iterator is pointing to has been removed, when `operator++` is invoked, the error is throwed.</del>
+
+<del>Therefore, to fix the bug, I shall add `std::lock_guard` in the beginning of the `Unlock` method. But when I tried it, the test had the problem of joining the threads in the end of the test body and the test got stuck. So I give up the try and let the bug remains.</del>

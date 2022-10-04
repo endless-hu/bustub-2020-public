@@ -15,7 +15,7 @@ jobs:
           repository: endless-hu/CMU-bustub
           token: ${{ secrets.GH_PAT }}
           path: priv_repo
-          fetch_depth: 0
+          fetch-depth: 0
 
       - name: Checkout This Repo
         uses: actions/checkout@v3
