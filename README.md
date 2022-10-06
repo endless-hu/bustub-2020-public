@@ -235,12 +235,6 @@ To implement a series of executions, including:
 - `src/execution/limit_executor.cpp`
 - `src/execution/aggregation_executor.cpp`
 
-### Future Improvements
-
-The `index_scan_executor` is just equal to sequential scan because I don't know how to utilize the `predicate`. The B+ tree only supports exact key query, if I want a range scan, which means the begin condition is not accurate with keys in the index. 
-
-Besides, there are some memory leaks.
-
 ### Additional Tests
 
 I passed all tests in `./test` folder. Besides, I added several additional tests to verify operations like: 

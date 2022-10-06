@@ -33,11 +33,13 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=DEBUG ..
           make -j 2
           make executor_test
+          make catalog_test
 
       - name: Run All Unit Tests
         run: |
           cd priv_repo/build
           ./test/executor_test
+          ./test/catalog_test
 
           cd ..
           # copy test source code to this repo
