@@ -1,3 +1,9 @@
+commit 73e7001f49001d361c23ad50b9ba75ad0aed5d44
+Author: Zhijing Hu <qq906555703@gmail.com>
+Date:   Fri Oct 7 10:34:35 2022 +0800
+
+    Add catalog tests.
+
 commit 57577a68d39d9a1a3d1d9839aa84af20dcb78846
 Author: Zhijing Hu <qq906555703@gmail.com>
 Date:   Tue Oct 4 14:09:33 2022 +0800
